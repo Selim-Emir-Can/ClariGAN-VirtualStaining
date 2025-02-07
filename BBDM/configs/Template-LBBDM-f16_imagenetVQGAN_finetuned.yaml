@@ -106,9 +106,9 @@ model:
 
       UNetParams:
         image_size: 16
-        in_channels: 256
+        in_channels: 256 # TO DO: accomodate extended depth of field at 20% resolution, ANS: 256*5
         model_channels: 128
-        out_channels: 256
+        out_channels: 256 # TO DO: output shape is same
         num_res_blocks: 2
         attention_resolutions: !!python/tuple
           - 16

@@ -55,6 +55,7 @@ class LatentBrownianBridgeModel(BrownianBridgeModel):
         return self
 
     def forward(self, x, x_cond, context=None):
+        # TO DO
         with torch.no_grad():
             x_latent = self.encode(x, cond=False)
             x_cond_latent = self.encode(x_cond, cond=True)
