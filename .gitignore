@@ -1,0 +1,35 @@
+# 1) Ignore everything by default
+*
+
+# 2) Allow Git to see directories (needed so whitelisting works)
+!*/
+
+# 3) Whitelist only these top-level folders (edit to match your repo)
+!BBDM/
+
+BBDM/configs/*
+!BBDM/configs/
+!BBDM/configs/Template-LBBDM-f16_imagenetVQGAN_512.yaml
+
+taming-transformers/configs/*
+!taming-transformers/configs/
+!taming-transformers/configs/custom_vqgan_f16_imagenet.yaml
+
+!taming-transformers/
+!.gitignore
+
+
+# 4) Now apply exclusions within the whitelisted areas
+**/*.png
+
+# Examples of excluding subfolders/subfiles (customize)
+BBDM/**/AdapterNetwork_Results/
+BBDM/**/AdapterNetwork_Weights/
+BBDM/**/k-fold-automatic_selection/
+BBDM/**/k-fold-manual_selection/
+BBDM/**/results/
+BBDM/**/__pycache__/
+**/*.py[cod]
+
+
+taming-transformers/**/__pycache__/
