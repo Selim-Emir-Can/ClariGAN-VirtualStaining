@@ -1,0 +1,260 @@
+
+       # if(stage == 'val'):
+        #     # Decode → [-1,1] → [0,1]
+        #     x0_recon     = additional_info["x0_recon"]           # (N,C,H,W) latent
+        #     x0_recon_dec = net.decode(x0_recon)                  # [-1,1]
+        #     y_rgb        = (x0_recon_dec * 0.5 + 0.5).clamp(0, 1)
+        #     x_rgb        = (x              * 0.5 + 0.5).clamp(0, 1)
+
+        #     # 1) SSIM (↑ better) → loss = 1 - ssim
+        #     ssim_val  = self.ssim_fn(y_rgb, x_rgb)               # ∈ [0,1]
+        #     ssim_loss = 1.0 - ssim_val
+
+        #     # 2) LPIPS (↓ better)
+        #     # lpips_val  = self.lpips_fn(y_rgb * 2 - 1, x_rgb * 2 - 1).mean()
+        #     # lpips_loss = lpips_val
+
+        #     # 3) MSE (↓ better) + PSNR (↑ better) as a metric only
+        #     mse_val  = torch.nn.functional.mse_loss(y_rgb, x_rgb, reduction="mean")
+        #     # psnr_val = -10.0 * torch.log10(mse_val + 1e-8)       # metric, not used in loss
+
+        #     # 4) Combine into a scalar validation loss
+        #     #    (match train spirit: structure/perceptual/pixel)
+        #     w_ssim = 0.50
+        #     w_mse = 0.20
+
+        #     loss = loss + w_ssim * ssim_loss + w_mse * mse_val
+
+
+
+import lpips, kornia
+
+import torch
+import torch, torch.nn.functional as F
+import math
+
+def ciede2000_from_lab(Lab1: torch.Tensor, Lab2: torch.Tensor,
+                       kL: float = 1.0, kC: float = 1.0, kH: float = 1.0,
+                       eps: float = 1e-12) -> torch.Tensor:
+    """
+    Lab inputs: [N, 3, H, W] (L* in [0,100], a*, b* ~ [-128,127])
+    Returns per-pixel ΔE00 map [N, H, W].
+    """
+    assert Lab1.shape == Lab2.shape and Lab1.shape[1] == 3, "Expect [N,3,H,W]"
+    L1, a1, b1 = Lab1[:, 0], Lab1[:, 1], Lab1[:, 2]
+    L2, a2, b2 = Lab2[:, 0], Lab2[:, 1], Lab2[:, 2]
+
+    # Chroma
+    C1 = torch.sqrt(a1*a1 + b1*b1 + eps)
+    C2 = torch.sqrt(a2*a2 + b2*b2 + eps)
+    Cbar = (C1 + C2) * 0.5
+
+    # Compensation factor
+    c25 = Lab1.new_tensor(25.0)
+    c25_7 = c25.pow(7)
+    G = 0.5 * (1.0 - torch.sqrt((Cbar.pow(7) / (Cbar.pow(7) + c25_7)).clamp_min(0)))
+
+    # Adjusted a*
+    a1p = (1.0 + G) * a1
+    a2p = (1.0 + G) * a2
+
+    # Adjusted chroma
+    C1p = torch.sqrt(a1p*a1p + b1*b1 + eps)
+    C2p = torch.sqrt(a2p*a2p + b2*b2 + eps)
+
+    # Adjusted hue (radians in [0, 2π))
+    h1p = torch.atan2(b1, a1p); h1p = torch.where(h1p < 0, h1p + 2*math.pi, h1p)
+    h2p = torch.atan2(b2, a2p); h2p = torch.where(h2p < 0, h2p + 2*math.pi, h2p)
+
+    # Differences
+    dLp = L2 - L1
+    dCp = C2p - C1p
+
+    dhp = h2p - h1p
+    dhp = torch.where(dhp >  math.pi, dhp - 2*math.pi, dhp)
+    dhp = torch.where(dhp < -math.pi, dhp + 2*math.pi, dhp)
+    # If either chroma is ~0, hue diff = 0
+    dhp = torch.where((C1p*C2p) < eps, Lab1.new_zeros(dhp.shape), dhp)
+
+    dHp = 2.0 * torch.sqrt(C1p*C2p + eps) * torch.sin(dhp * 0.5)
+
+    # Averages
+    Lbarp = 0.5 * (L1 + L2)
+    Cbarp = 0.5 * (C1p + C2p)
+
+    habs = torch.abs(h1p - h2p)
+    hbarp = (h1p + h2p) * 0.5
+    hbarp = torch.where((C1p*C2p) < eps, h1p + h2p, hbarp)
+    hbarp = torch.where((C1p*C2p) >= eps, torch.where(habs > math.pi,
+                        hbarp + math.pi * torch.where((h1p + h2p) < 2*math.pi, 1.0, -1.0), hbarp),
+                        hbarp)
+    hbarp = hbarp % (2*math.pi)
+
+    # T term
+    T = (1
+         - 0.17*torch.cos(hbarp - math.radians(30))
+         + 0.24*torch.cos(2*hbarp)
+         + 0.32*torch.cos(3*hbarp + math.radians(6))
+         - 0.20*torch.cos(4*hbarp - math.radians(63)))
+
+    # Rotation and weighting terms
+    habp_deg = hbarp * (180.0 / math.pi)
+    dTheta = 30.0 * torch.exp(-((habp_deg - 275.0)/25.0)**2)
+    RC = 2.0 * torch.sqrt((Cbarp.pow(7) / (Cbarp.pow(7) + c25_7)).clamp_min(0))
+    SL = 1.0 + (0.015 * (Lbarp - 50.0).pow(2)) / torch.sqrt(20.0 + (Lbarp - 50.0).pow(2) + eps)
+    SC = 1.0 + 0.045 * Cbarp
+    SH = 1.0 + 0.015 * Cbarp * T
+    RT = -torch.sin(2.0 * torch.deg2rad(dTheta)) * RC
+
+    # Compose
+    dL_ = dLp / (kL * SL + eps)
+    dC_ = dCp / (kC * SC + eps)
+    dH_ = dHp / (kH * SH + eps)
+
+    dE2 = dL_*dL_ + dC_*dC_ + dH_*dH_ + RT * dC_ * dH_
+    return torch.sqrt(dE2.clamp_min(0.0))
+
+def ciede2000_from_rgb(rgb1: torch.Tensor, rgb2: torch.Tensor, **kw) -> torch.Tensor:
+    """
+    RGB in [0,1], NCHW. Converts to Lab and calls ΔE00.
+    """
+    lab1 = kornia.color.rgb_to_lab(rgb1)
+    lab2 = kornia.color.rgb_to_lab(rgb2)
+    return ciede2000_from_lab(lab1, lab2, **kw)
+
+@torch.no_grad()
+def tissue_weight_mask(rgb01: torch.Tensor,
+                       L_thresh=90.0, C_thresh=5.0,
+                       kL=2.5, kC=1.5, blur_ks=7) -> torch.Tensor:
+    """
+    rgb01: [N,3,H,W] in [0,1]
+    Returns: [N,1,H,W] soft tissue weights in [0,1] (1=tissue, 0=white bg)
+    """
+    lab = kornia.color.rgb_to_lab(rgb01)              # L*:0-100, a*/b*:~[-128,128]
+    L  = lab[:, :1]                                   # [N,1,H,W]
+    a  = lab[:, 1:2]
+    b  = lab[:, 2:3]
+    C  = torch.sqrt(a*a + b*b + 1e-8)
+
+    # whiteness probability: high if L is high *and* chroma is small
+    sL = torch.sigmoid((L - L_thresh) / kL)
+    sC = torch.sigmoid((C_thresh - C) / kC)
+    p_white = sL * sC                                 # [N,1,H,W]
+
+    # tissue weight (soft mask). Small floor keeps some grad on bg.
+    w = (1.0 - p_white).clamp(0.05, 1.0)
+
+    # smooth to avoid speckle; use depthwise blur via avg_pool
+    if blur_ks and blur_ks > 1:
+        pad = blur_ks // 2
+        w = F.avg_pool2d(F.pad(w, (pad,pad,pad,pad), mode='reflect'), blur_ks, stride=1)
+    return w
+
+@torch.no_grad()
+def mask_reliability(x_rgb01, y_rgb01, w_x, w_y, min_area=0.02, max_area=0.98, min_iou=0.6):
+    ax = w_x.mean().item(); ay = w_y.mean().item()
+    ok_area = (min_area <= ax <= max_area) and (min_area <= ay <= max_area)
+
+    bx = (w_x > 0.5).float(); by = (w_y > 0.5).float()
+    inter = (bx*by).sum().item()
+    union = (bx+by).clamp(max=1).sum().item() + 1e-8
+    iou = inter/union
+    ok_iou = iou >= min_iou
+
+    # whiteness check on background of y (HE)
+    bg = (w_y < 0.1).float()
+    if bg.sum() > 0:
+        y_bg_mean = (y_rgb01*bg).sum() / (bg.sum()*3.0 + 1e-8)
+        ok_bg = y_bg_mean.item() >= 0.90
+    else:
+        ok_bg = True
+
+    return ok_area and ok_iou and ok_bg, dict(area_x=ax, area_y=ay, iou=iou)
+
+def masked_mean(t, w):  # t: [N,C,H,W], w: [N,1,H,W]
+    return (t * w).sum() / (w.sum() * t.shape[1] + 1e-8)
+
+    
+        # self.ssim_fn = StructuralSimilarityIndexMeasure(data_range=1.0).to(self.config.training.device[0])
+        # self.lpips_fn = lpips.LPIPS(net='vgg').to(self.config.training.device[0])  # perceptual
+        # self.ema_alpha = 0.01  # smoothing; 0.01–0.05 works
+        # self.loss_ema = {
+        #     "L1": 1.0,
+        #     "SSIM": 1.0,
+        #     "LPIPS": 1.0,
+        #     "DE": 1.0
+        # }
+        # # Optional: ramp for aux losses
+        # self.ramp_T = 10_000   # steps to reach full weight
+
+
+        # if(stage == 'train'):
+        #     # decode
+        #     x0_recon = additional_info["x0_recon"]              # (N,C,H,W)
+        #     x0_recon_dec = net.decode(x0_recon)
+
+        #     # 1) diffusion loss is already in variable `loss`
+        #     L_diff = loss
+
+        #     # 2) latent-space L1
+        #     """ L_L1 = torch.nn.functional.l1_loss(x0_recon_dec, x) """
+
+        #     # 3) SSIM in RGB space (work in [0,1])
+        #     x_rgb      = (x * 0.5 + 0.5).clamp(0, 1)
+        #     x0_rgb     = (x0_recon_dec * 0.5 + 0.5).clamp(0, 1)
+        #     L_SSIM  = 1.0 - self.ssim_fn(x0_rgb, x_rgb)
+
+        #     # 4) LPIPS (expects [-1,1])
+        #     x_lp        = x * 2 - 1
+        #     x0_lp       = x0_recon_dec * 2 - 1
+        #     L_LPIPS     = self.lpips_fn(x0_lp, x_lp).mean()
+
+        #     # 5) ΔE2000 (per-pixel Lab difference)
+        #     x_lab       = kornia.color.rgb_to_lab(x_rgb)
+        #     x0_lab      = kornia.color.rgb_to_lab(x0_rgb)
+        #     # L_deltaE = torch.linalg.norm(x_lab - x0_lab, dim=1).mean()   # (N,H,W) → scalar
+        #     """ L_deltaE = ciede2000_from_lab(x0_lab, x_lab).mean() """
+        #     ##########################################################################################################################################
+        #     with torch.no_grad():
+        #         w_x = tissue_weight_mask(x_rgb)    # target HE – stable choice
+        #         w_x0 = tissue_weight_mask(x0_rgb)    # predicted – optional
+        #         ok, stats = mask_reliability(x_rgb, x0_rgb, w_x, w_x0)
+        #         # Prefer union to avoid accidentally dropping tissue
+        #         w_tissue = torch.max(w_x, w_x0) if ok else torch.ones_like(w_x)
+
+        #     L_L1     = masked_mean((x0_rgb - x_rgb).abs(), w_tissue)
+        #     L_deltaE = masked_mean(ciede2000_from_lab(x0_lab, x_lab).unsqueeze(1), w_tissue)
+
+        #     # 1) compute raw losses (prefer masked for pixel/color)
+        #     L_L1_raw     = L_L1
+        #     L_SSIM_raw   = L_SSIM
+        #     L_LPIPS_raw  = L_LPIPS
+        #     L_DE_raw     = L_deltaE
+
+        #     with torch.no_grad():
+        #         a = self.ema_alpha
+        #         self.loss_ema["L1"]   = (1-a)*self.loss_ema["L1"]   + a*L_L1_raw.detach()
+        #         self.loss_ema["SSIM"] = (1-a)*self.loss_ema["SSIM"] + a*L_SSIM_raw.detach()
+        #         self.loss_ema["LPIPS"]= (1-a)*self.loss_ema["LPIPS"]+ a*L_LPIPS_raw.detach()
+        #         self.loss_ema["DE"]   = (1-a)*self.loss_ema["DE"]   + a*L_DE_raw.detach()
+
+        #     # 3) normalized losses
+        #     L_L1_n   = L_L1_raw    / (self.loss_ema["L1"]   + 1e-8)
+        #     L_SSIM_n = L_SSIM_raw  / (self.loss_ema["SSIM"] + 1e-8)
+        #     L_LPIPS_n= L_LPIPS_raw / (self.loss_ema["LPIPS"]+ 1e-8)
+        #     L_DE_n   = L_DE_raw    / (self.loss_ema["DE"]   + 1e-8)
+
+        #     # 4) ramp weights
+        #     t = self.global_step  # however you track it
+        #     r = min(1.0, t / float(self.ramp_T))
+
+        #     eta_pix, eta_ssim, eta_lp, eta_de = 0.20, 0.10, 0.05, 0.05
+        #     loss = L_diff + r * (eta_pix * L_L1_n + eta_ssim * L_SSIM_n + eta_lp * L_LPIPS_n + eta_de * L_DE_n)
+
+        #     # # 6) Combine
+        #     # eta_pix  = 0.50
+        #     # eta_ssim = 0.25
+        #     # eta_lp   = 0.15
+        #     # eta_de   = 0.10
+
+        #     # loss = L_diff + eta_pix  * L_L1 + eta_ssim * L_SSIM + eta_lp   * L_LPIPS + eta_de   * L_deltaE

@@ -4,32 +4,34 @@
 # 2) Allow Git to see directories (needed so whitelisting works)
 !*/
 
-# 3) Whitelist only these top-level folders (edit to match your repo)
+# 3) Track ONLY these two trees (everything inside them)
 !BBDM/
-
-BBDM/configs/*
-!BBDM/configs/
-!BBDM/configs/Template-LBBDM-f16_imagenetVQGAN_512.yaml
-
-taming-transformers/configs/*
-!taming-transformers/configs/
-!taming-transformers/configs/custom_vqgan_f16_imagenet.yaml
+!BBDM/**
 
 !taming-transformers/
+!taming-transformers/**
+
+# Always keep the gitignore itself
 !.gitignore
 
 
-# 4) Now apply exclusions within the whitelisted areas
+# 4) Exclusions inside the whitelisted trees
+
+# Ignore PNGs anywhere
 **/*.png
 
-# Examples of excluding subfolders/subfiles (customize)
+# Python cache/bytecode
+**/__pycache__/
+**/*.py[cod]
+
+# BBDM: exclude derived/heavy folders
 BBDM/**/AdapterNetwork_Results/
 BBDM/**/AdapterNetwork_Weights/
 BBDM/**/k-fold-automatic_selection/
 BBDM/**/k-fold-manual_selection/
 BBDM/**/results/
-BBDM/**/__pycache__/
-**/*.py[cod]
 
-
-taming-transformers/**/__pycache__/
+# taming-transformers: exclude derived/heavy folders
+taming-transformers/logs/
+taming-transformers/results/
+taming-transformers/pretrained_weights/
