@@ -98,8 +98,8 @@ def CPU_singleGPU_launcher(config, train_set, val_set, test_set, save_name, labe
 
     ################
     config.data.dataset_name = config.data.dataset_name + '_' + save_name
-    config.label_by_name = label_by_name
-    config.class_weights = class_weights
+    # config.label_by_name = label_by_name # inverse frequency based class weighting does not make sense for diffusion, ignore
+    # config.class_weights = class_weights  # inverse frequency based class weighting does not make sense for diffusion, ignore
 
     runner = get_runner(config.runner, config)
     if config.args.train:

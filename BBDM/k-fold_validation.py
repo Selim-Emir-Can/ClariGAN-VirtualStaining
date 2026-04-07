@@ -139,17 +139,9 @@ def main(train_set, val_set, test_set, save_name):
 
 import os
 import re
-from sklearn.model_selection import StratifiedKFold, train_test_split
 from collections import defaultdict
 from collections import Counter
 from sklearn.model_selection import StratifiedKFold, train_test_split
-import os
-import re
-
-from collections import Counter
-from sklearn.model_selection import StratifiedKFold, train_test_split
-import os
-import re
 
 def stratified_kfold_85_5_10(train_dir="train", k=10, seed=42):
     input_dir = os.path.join(train_dir, 'A')
@@ -434,7 +426,7 @@ if __name__ == "__main__":
 
         
 
-        save_name = f'fold_{counter}_custom_loss'
+        save_name = f'fold_{counter}_trainable_encoder'
 
         # === Model Initialization ===
         # === Training Loop ===
@@ -486,7 +478,7 @@ if __name__ == "__main__":
         
         print('test size: ', len(test_loader))
 
-        sample_path = os.path.join(r"C:\Users\ammic\Desktop\ClariGAN-DL\k-fold_results_custom_loss", save_name) # WHERE YOU HAVE TEST RESULTS FOR EACH FOLD of the k-fold cross validation
+        sample_path = os.path.join(r"C:\Users\ammic\Desktop\ClariGAN-DL\k-fold_results_trainable_encoder", save_name) # WHERE YOU HAVE TEST RESULTS FOR EACH FOLD of the k-fold cross validation
         runner.sample_to_eval_combined_with_uncertainty(bbdmnet, test_loader, sample_path=sample_path)
 
         # === Data Loading (Customize Here) ===

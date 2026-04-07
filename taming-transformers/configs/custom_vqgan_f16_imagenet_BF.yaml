@@ -40,11 +40,11 @@ data:
     train:
       target: taming.data.custom.CustomTrain
       params:
-        training_images_list_file: C:\Users\ammic\Desktop\ClariGAN-DL\taming-related\trainBrightfield.txt
+        training_images_list_file: C:\Users\ammic\Desktop\ClariGAN-DL\taming-related\trainBrightfield800.txt # C:\Users\ammic\Desktop\ClariGAN-DL\taming-related\trainBrightfield.txt
         size: 256
     validation:
       target: taming.data.custom.CustomTest
       params:
-        test_images_list_file: C:\Users\ammic\Desktop\ClariGAN-DL\taming-related\testBrightfieldNA.txt
+        test_images_list_file: C:\Users\ammic\Desktop\ClariGAN-DL\taming-related\testBrightfieldNA800.txt # C:\Users\ammic\Desktop\ClariGAN-DL\taming-related\testBrightfieldNA.txt
         size: 256
 
