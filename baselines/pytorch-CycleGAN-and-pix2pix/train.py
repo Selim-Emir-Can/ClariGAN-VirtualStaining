@@ -45,7 +45,10 @@ def run_val(model, val_dataset):
             bsz = model.fake_B.size(0)
             val_l1_sum += F.l1_loss(model.fake_B, model.real_B).item() * bsz
             val_n += bsz
-    model.train()
+    # Restore train mode -- BaseModel has eval() but no symmetric train()
+    for name in model.model_names:
+        if isinstance(name, str):
+            getattr(model, "net" + name).train()
     return val_l1_sum / max(val_n, 1)
 
 
