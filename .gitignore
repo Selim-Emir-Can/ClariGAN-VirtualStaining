@@ -11,6 +11,9 @@
 !taming-transformers/
 !taming-transformers/**
 
+!baselines/
+!baselines/**
+
 # Always keep the gitignore itself
 !.gitignore
 
@@ -35,3 +38,9 @@ BBDM/**/results/
 taming-transformers/logs/
 taming-transformers/results/
 taming-transformers/pretrained_weights/
+
+# baselines: exclude artifacts created by training/orchestration
+baselines/**/fold_lists/
+baselines/**/checkpoints/
+baselines/**/results/
+baselines/**/web/
