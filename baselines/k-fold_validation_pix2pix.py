@@ -1,25 +1,30 @@
 """K-fold orchestrator for pix2pix baseline.
 
-Uses the SAME stratified k-fold splits as BBDM/k-fold_validation.py (imported
-directly) AND the SAME augmentation pipeline (BBDM's CustomAlignedDataset),
-then drives the upstream pix2pix train.py / test.py via subprocess.
+Uses the SAME stratified k-fold splits as BBDM/k-fold_validation.py (the
+stratified_kfold_85_5_10 function is duplicated below verbatim to avoid
+pulling in BBDM's heavy training imports) AND the SAME augmentation pipeline
+(BBDM's CustomAlignedDataset, wrapped by bbdm_aligned_dataset.py inside the
+pix2pix repo), then drives the upstream pix2pix train.py / test.py via
+subprocess.
 
 Writes per-fold list files of (R1_path, R3_path) pairs and runs the GAN
 training with:
     --dataset_mode bbdm_aligned --dataroot <list_file>
+    --val_dataroot <val_list_file>   # for per-epoch val L1 logging
 
 Custom dataset class:
     baselines/pytorch-CycleGAN-and-pix2pix/data/bbdm_aligned_dataset.py
 """
 
 import os
+import re
 import sys
 import subprocess
-import importlib.util
+from collections import Counter
+from sklearn.model_selection import StratifiedKFold, train_test_split
 
 
 # -------- paths --------
-BBDM_DIR = r"C:\Users\ammic\Desktop\ClariGAN-DL\BBDM"
 PIX2PIX_DIR = r"C:\Users\ammic\Desktop\ClariGAN-DL\baselines\pytorch-CycleGAN-and-pix2pix"
 DATASET_TRAIN_DIR = r"C:\Users\ammic\Desktop\BBDM-kfold\train"  # has A/ and B/ subdirs
 FOLD_LISTS_DIR = os.path.join(PIX2PIX_DIR, "fold_lists")
@@ -32,20 +37,83 @@ N_EPOCHS_DECAY = 25    # linearly-decay epochs (so total = 50, matching BBDM)
 LOAD_SIZE = 256        # no resize (data already 256x256)
 CROP_SIZE = 256
 BATCH_SIZE = 1         # canonical pix2pix
-GPU_IDS = "0"
 NETG = "unet_256"
+NGF = 144              # generator features. Default 64 -> ~54M G params.
+                       # Param scaling ~ ngf^2: ngf=144 -> ~273M G (target: BBDM ~288M trainable).
+                       # Verify on first run from the "[Network G] Total number of parameters" line.
+# Note: newer pix2pix dropped --gpu_ids; uses cuda:0 by default via init_ddp().
+# Set LOCAL_RANK env var for multi-GPU.
 
 
-def load_bbdm_kfold_fn():
-    """Import stratified_kfold_85_5_10 from BBDM/k-fold_validation.py without
-    triggering its __main__ block."""
-    sys.path.insert(0, BBDM_DIR)
-    spec = importlib.util.spec_from_file_location(
-        "bbdm_kfold", os.path.join(BBDM_DIR, "k-fold_validation.py")
-    )
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod.stratified_kfold_85_5_10
+def stratified_kfold_85_5_10(train_dir, k=10, seed=42):
+    """Duplicated VERBATIM from BBDM/k-fold_validation.py to keep splits
+    bit-identical without depending on the BBDM training stack."""
+    input_dir = os.path.join(train_dir, 'A')
+    gt_dir = os.path.join(train_dir, 'B')
+
+    r1_files = [f for f in os.listdir(input_dir) if f.startswith("R1") and os.path.isfile(os.path.join(input_dir, f))]
+    data = []
+
+    pattern = re.compile(r'R1-([A-Za-z]+(?:part\d+)?).*?_(5x5|10x10)')
+
+    for filename in r1_files:
+        match = pattern.search(filename)
+        if not match:
+            continue
+        letter = match.group(1)
+        crop = match.group(2)
+        label = f"{letter}_{crop}"
+        r3_filename = filename.replace("R1", "R3", 1)
+        r1_path = os.path.join(input_dir, filename)
+        r3_path = os.path.join(gt_dir, r3_filename)
+        if os.path.exists(r3_path):
+            data.append({"r1": r1_path, "r3": r3_path, "letter": letter, "crop": crop, "original_label": label})
+
+    original_labels = [item['original_label'] for item in data]
+    label_counts = Counter(original_labels)
+
+    for item in data:
+        label = item['original_label']
+        letter = item['letter']
+        crop = item['crop']
+        count = label_counts[label]
+        if count < k:
+            if letter == "P":
+                item["letter"] = "D"
+            elif letter == "Z":
+                item["letter"] = "H"
+            elif crop == "5x5":
+                counterpart_label = f"{letter}_10x10"
+                if label_counts.get(counterpart_label, 0) >= k:
+                    item["crop"] = "10x10"
+        item["label"] = f"{item['letter']}_{item['crop']}"
+
+    final_labels = [item["label"] for item in data]
+    pairs = [(item["r1"], item["r3"]) for item in data]
+
+    final_counts = Counter(final_labels)
+    too_small = {lbl: c for lbl, c in final_counts.items() if c < k}
+    if too_small:
+        raise ValueError(
+            f"After merging, the following classes still have fewer than {k} samples:\n" +
+            "\n".join([f"{lbl}: {c}" for lbl, c in too_small.items()])
+        )
+
+    skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=seed)
+    all_indices = list(skf.split(pairs, final_labels))
+
+    folds = []
+    for fold_idx, (trainval_idx, test_idx) in enumerate(all_indices):
+        trainval_data = [pairs[i] for i in trainval_idx]
+        trainval_labels = [final_labels[i] for i in trainval_idx]
+        test_data = [pairs[i] for i in test_idx]
+        val_ratio = 1 / 18  # ~5%
+        train_data, val_data, _, _ = train_test_split(
+            trainval_data, trainval_labels,
+            test_size=val_ratio, stratify=trainval_labels, random_state=seed,
+        )
+        folds.append({"fold": fold_idx, "train": train_data, "val": val_data, "test": test_data})
+    return folds
 
 
 def write_list_file(pairs, fold_num, phase, lists_dir):
@@ -70,12 +138,12 @@ def run_train(fold_idx, train_list, val_list):
         "--dataset_mode", "bbdm_aligned",
         "--direction", "AtoB",
         "--netG", NETG,
+        "--ngf", str(NGF),
         "--load_size", str(LOAD_SIZE),
         "--crop_size", str(CROP_SIZE),
         "--batch_size", str(BATCH_SIZE),
         "--n_epochs", str(N_EPOCHS),
         "--n_epochs_decay", str(N_EPOCHS_DECAY),
-        "--gpu_ids", GPU_IDS,
         "--input_nc", "3",
         "--output_nc", "3",
     ]
@@ -95,9 +163,9 @@ def run_test(fold_idx, list_path, phase):
         "--dataset_mode", "bbdm_aligned",
         "--direction", "AtoB",
         "--netG", NETG,
+        "--ngf", str(NGF),
         "--load_size", str(LOAD_SIZE),
         "--crop_size", str(CROP_SIZE),
-        "--gpu_ids", GPU_IDS,
         "--input_nc", "3",
         "--output_nc", "3",
         "--phase", phase,
@@ -110,7 +178,6 @@ def run_test(fold_idx, list_path, phase):
 
 
 def main():
-    stratified_kfold_85_5_10 = load_bbdm_kfold_fn()
     print(f"computing {K}-fold stratified splits from {DATASET_TRAIN_DIR}")
     splits = stratified_kfold_85_5_10(DATASET_TRAIN_DIR, k=K, seed=SEED)
 

@@ -24,6 +24,7 @@ import os
 import copy
 import torch
 import torch.nn.functional as F
+from tqdm.auto import tqdm
 from options.train_options import TrainOptions
 from data import create_dataset
 from models import create_model
@@ -84,7 +85,9 @@ if __name__ == "__main__":
         if hasattr(dataset, "set_epoch"):
             dataset.set_epoch(epoch)
 
-        for i, data in enumerate(dataset):  # inner loop within one epoch
+        total_epochs = opt.n_epochs + opt.n_epochs_decay
+        pbar = tqdm(dataset, total=len(dataset), desc=f"epoch {epoch}/{total_epochs}", dynamic_ncols=True, leave=True)
+        for i, data in enumerate(pbar):  # inner loop within one epoch
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
                 t_data = iter_start_time - iter_data_time
@@ -104,13 +107,15 @@ if __name__ == "__main__":
                 t_comp = (time.time() - iter_start_time) / opt.batch_size
                 visualizer.print_current_losses(epoch, epoch_iter, losses, t_comp, t_data)
                 visualizer.plot_current_losses(total_iters, losses)
+                pbar.set_postfix({k: f"{v:.3f}" for k, v in losses.items()})
 
             if total_iters % opt.save_latest_freq == 0:  # cache our latest model every <save_latest_freq> iterations
-                print(f"saving the latest model (epoch {epoch}, total_iters {total_iters})")
+                tqdm.write(f"saving the latest model (epoch {epoch}, total_iters {total_iters})")
                 save_suffix = f"iter_{total_iters}" if opt.save_by_iter else "latest"
                 model.save_networks(save_suffix)
 
             iter_data_time = time.time()
+        pbar.close()
 
         model.update_learning_rate()  # update learning rates at the end of every epoch
 

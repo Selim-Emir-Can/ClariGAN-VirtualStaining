@@ -23,6 +23,7 @@ import os
 import copy
 import torch
 import torch.nn.functional as F
+from tqdm.auto import tqdm
 from options.train_options import TrainOptions
 from data import create_dataset
 from models import create_model
@@ -78,7 +79,9 @@ if __name__ == '__main__':
         iter_data_time = time.time()    # timer for data loading per iteration
         epoch_iter = 0                  # the number of training iterations in current epoch, reset to 0 every epoch
 
-        for i, data in enumerate(dataset):  # inner loop within one epoch
+        total_epochs = opt.niter + opt.niter_decay
+        pbar = tqdm(dataset, total=len(dataset), desc=f"epoch {epoch}/{total_epochs}", dynamic_ncols=True, leave=True)
+        for i, data in enumerate(pbar):  # inner loop within one epoch
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
                 t_data = iter_start_time - iter_data_time
@@ -99,13 +102,15 @@ if __name__ == '__main__':
                 visualizer.print_current_losses(epoch, epoch_iter, losses, t_comp, t_data)
                 if opt.display_id > 0:
                     visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, losses)
+                pbar.set_postfix({k: f"{v:.3f}" for k, v in losses.items()})
 
             if total_iters % opt.save_latest_freq == 0:   # cache our latest model every <save_latest_freq> iterations
-                print('saving the latest model (epoch %d, total_iters %d)' % (epoch, total_iters))
+                tqdm.write('saving the latest model (epoch %d, total_iters %d)' % (epoch, total_iters))
                 save_suffix = 'iter_%d' % total_iters if opt.save_by_iter else 'latest'
                 model.save_networks(save_suffix)
 
             iter_data_time = time.time()
+        pbar.close()
         if epoch % opt.save_epoch_freq == 0:              # cache our model every <save_epoch_freq> epochs
             print('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
             model.save_networks('latest')

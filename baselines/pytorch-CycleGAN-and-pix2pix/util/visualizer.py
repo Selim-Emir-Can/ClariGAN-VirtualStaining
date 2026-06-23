@@ -159,8 +159,10 @@ class Visualizer:
         message = f"[Rank {local_rank}] (epoch: {epoch}, iters: {iters}, time: {t_comp:.3f}, data: {t_data:.3f}) "
         for k, v in losses.items():
             message += f", {k}: {v:.3f}"
-        message += "\n"
-        print(message)  # print the message on ALL ranks with rank info
+        # Route through tqdm.write so the loss line doesn't break the progress bar.
+        # Works fine if no tqdm bar is active.
+        from tqdm.auto import tqdm as _tqdm
+        _tqdm.write(message)
 
         # Only save to log file on main process (rank 0)
         if local_rank == 0:

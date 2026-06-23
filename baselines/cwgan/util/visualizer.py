@@ -5,7 +5,15 @@ import ntpath
 import time
 from . import util, html
 from subprocess import Popen, PIPE
-from scipy.misc import imresize
+try:
+    from scipy.misc import imresize
+except ImportError:
+    # scipy.misc.imresize was removed in scipy>=1.3. Shim with PIL.
+    from PIL import Image as _PILImage
+    _INTERP = {'bicubic': _PILImage.BICUBIC, 'bilinear': _PILImage.BILINEAR, 'nearest': _PILImage.NEAREST}
+    def imresize(arr, size, interp='bicubic'):
+        # scipy size is (h, w); PIL resize takes (w, h)
+        return np.array(_PILImage.fromarray(arr).resize((size[1], size[0]), _INTERP.get(interp, _PILImage.BICUBIC)))
 
 if sys.version_info[0] == 2:
     VisdomExceptionBase = Exception
@@ -221,6 +229,8 @@ class Visualizer():
         for k, v in losses.items():
             message += '%s: %.3f ' % (k, v)
 
-        print(message)  # print the message
+        # Route through tqdm.write so the loss line doesn't break the progress bar.
+        from tqdm.auto import tqdm as _tqdm
+        _tqdm.write(message)
         with open(self.log_name, "a") as log_file:
             log_file.write('%s\n' % message)  # save the message
