@@ -32,7 +32,47 @@ pixel_space assumed at the 150 GPU-h LOSO cap (13.6 h/fold) until the probe says
 | pass 3 (seed 9012) done = everything | Tue Sep 22 00:59 | Mon Sep 21 08:11 |
 
 ## Launches / completions / failures
+- 21:49 QUEUE: pixel probe launched on GPU 7 (fold 3's GPU freed first). Log:
+  logs/q_pixel___folds_0___max_epoch_1___results_root__local_emir_ClariDi_probes_results___samples_root__local_emir_ClariDi_probes_samples___deliverables_root__local_emir_ClariDi_probes_deliv___tag_probe_pixel___eval_max_tiles_3.log
+- 21:52 PRUNE, fold 3 ONLY (13 GB -> 2.3 GB, kept top_model_epoch_10.pth + config.yaml).
+  NOTE for whoever runs it next: `./prune_finished_folds.sh` currently lists ALL of folds 0-5
+  because its guard is only "sample dir non-empty", and the legacy eval populates that dir
+  incrementally from the first tile. At 21:52 only fold 3 was actually finished (50/50 tiles +
+  inference_timing.json, process exited); folds 0,1,2,4,5 were mid-eval (25/79, 28/55, 26/53,
+  33/64, 35/50) with live processes. Running `--yes` then would have deleted checkpoints under
+  five running jobs. Correct guard = `inference_timing.json` exists AND the run_kfold process
+  for that fold has exited. Remaining folds pruned once they finish (~65 GB total).
+- 21:45 HF: `SelimEmirCan/claridi-results` exists (private, created by the user's side) and the
+  cached fine-grained token HAS WRITE ACCESS (verified with a 1-byte `_write_test.txt`, deleted
+  after). Uploaded the static files only: fold_assignments.{csv,json,txt}, manifest.csv, data_256/.
+- 21:50 UPLOAD POLICY (user, explicit): NO recurring/automatic uploads. A recurring uploader was
+  written and then DELETED (`auto_upload.sh`, gone). Parquet is packed in bulk locally; upload
+  happens 1-10 times total, by hand. Next upload is ONE fold as a format-validity check.
+- `pack_parquet.py` (new, CPU only) packs to the schema pinned in the repo README:
+  <experiment>/samples/fold_<k>.parquet with experiment, fold, tile_id, specimen, tissue, scale,
+  masked, gen_idx, seed, png; gen0 = seed 1234. Also --ceilings and --static. Verified on the
+  probe outputs (25 rows, 256x256 RGB PNGs round-trip, specimen asserted against the fold table).
+- 21:13 health check: all clean. Primary folds at epoch 40-43/50, stock folds at 25-26/50,
+  ceilings ~370/753 each. Fixed a bug in gpuset_switch.sh (unanchored pgrep matched its own
+  parent shell; would have refused to restart the runner at 10:00). Relaunched, now anchored.
+- 21:30 user asked (before leaving, back ~09:00 PDT Sep 19): free GPUs only after their job is
+  done (already the behaviour); parquet for anything uploaded; asked if results exist for the
+  manuscript session (none scoreable yet). Upload go-ahead NOT given: build parquet locally
+  under deliverables/parquet/ as folds complete, upload nothing before 09:00.
 - (none yet beyond the 20:15 queue launch of `stock --folds 2` on GPU 3)
+
+## PIXEL-SPACE DECISION: LOSO-11 (measured 22:03 Sep 18)
+Probe `pixel --folds 0 --max_epoch 1 --eval_max_tiles 3` on GPU 7, log logs/q_pixel*.log:
+  1 epoch (fold 0, 624 train patches x 8 = 4992 samples): **0:11:31**
+  inference: **7.8176 s/generation** (200 sample steps, 256x256, no VQGAN; timing csv in probes/deliv)
+Projection (50 epochs/fold, 5 gens/tile, per-fold epoch time scaled by that fold's train size):
+  LOSO-11   = 104.2 train + 8.2 eval = **112.4 GPU-h**   <- chosen (rule: LOSO-11 if <= 150)
+  grouped-5 =  46.3 train + 8.2 eval =   54.5 GPU-h
+So ~10.2 GPU-h per pixel fold, not the 13.6 h cap figure used in the overnight timeline; the
+pixel-space experiment and everything after it lands EARLIER than the tables I gave the user.
+Applied: 11 `pixel --folds k` lines inserted at the per-fold slots in queue.txt (fold 0's is next
+up), the five grouped-5 slots removed. Queue went 80 -> 91 pending jobs. Backup of the pre-insert
+queue: logs/queue_before_pixel_insert.txt. results_pixel_grouped5/ is NOT needed.
 
 ## Decisions / pending
 - Pixel-space probe: not yet started (queue position 6, after claridi 6-10).
