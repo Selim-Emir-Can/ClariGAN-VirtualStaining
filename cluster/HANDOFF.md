@@ -52,6 +52,10 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 10:36 **GPU HAND-BACK COMPLETE.** GPUs 2, 5, 6, 8 are all idle (4 MiB each) and the runner is
+  not refilling them; we are on GPUS="1 3 4 7 9" from here. Release times: GPU5 ~09:42 (job killed,
+  re-queued), GPU6 ~09:42, GPU8 ~09:57, GPU2 10:36 (encoder fold 3 finished its eval).
+  Everything from now on runs on 5 GPUs, which is what pushes the finish toward Monday.
 - 09:45 HAND-BACK APPLIED EARLY (to scheduling), because waiting for 10:00 would have defeated it.
   At 09:40:39 the runner launched `cwgan --folds 4` on **GPU 5** — one of the GPUs promised back at
   10:00. cwgan is ~4.2 h/fold, so it would have held GPU 5 until ~13:50. The same was about to
