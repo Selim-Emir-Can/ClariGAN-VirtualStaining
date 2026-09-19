@@ -52,6 +52,21 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 01:13 REAL BUG FOUND AND FIXED (affects ALL GAN baselines: pix2pix, cwgan, unet_l1).
+  `repo/baselines/kfold_grouped_baselines.py` line ~107: `export_bare_outputs()` used `B`
+  (the BASELINES entry), which is a local of `main()` -> `NameError: name 'B' is not defined`
+  when writing seeds_fold_<k>.json. Fix: `B = BASELINES[a.baseline]` inside the function
+  (backup logs/kfold_grouped_baselines.py.bak). Nothing else changed.
+  IMPACT IS SMALL: the crash is the LAST statement of the job, after training, inference and
+  the PNG export. For unet_l1 fold 0 all 79 gen0 PNGs and timing_fold_0.csv (with real
+  wall-clock, 11368.5 s train) were written correctly; only seeds_fold_0.json was left 0 bytes
+  (open() truncated it, then json.dump raised). No compute lost, no re-run needed.
+  Recovered with the new `export_baseline_fold.py --all` (repairs an empty seeds file, or does
+  the whole export from baselines_out/<b>/results/<run>/test_latest/images if that is missing too).
+  RUNNING JOBS STILL CARRY THE OLD CODE (python read the source at start): pix2pix 0/1,
+  cwgan 0/1, unet_l1 1 will each hit the same NameError at their final step. That is harmless —
+  run `python export_baseline_fold.py --all` afterwards and it repairs every one of them.
+  Jobs launched after 01:15 have the fix and need no repair.
 - 23:10 TRACEBACK in logs/q_encoder___folds_0.log — BENIGN, no action needed. It is a dataloader
   worker's multiprocessing finaliser losing a cleanup race:
   `OSError: [Errno 39] Directory not empty: '/tmp/pymp-...'` inside `_remove_temp_dir`.

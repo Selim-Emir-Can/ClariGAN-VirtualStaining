@@ -79,6 +79,7 @@ def export_bare_outputs(a, records, fold, images_dir, t_train, t_test, bs):
     output per tile, so it is always gen0). test.py names files <input_stem>_fake_B.png."""
     import time, shutil, csv
     from PIL import Image
+    B = BASELINES[a.baseline]      # was a local of main(): NameError when writing seeds_fold_<k>.json
     exp = a.experiment or a.baseline
     k = fold["fold"]
     out = os.path.join(a.deliverables_root, exp, "samples", f"fold_{k}")
