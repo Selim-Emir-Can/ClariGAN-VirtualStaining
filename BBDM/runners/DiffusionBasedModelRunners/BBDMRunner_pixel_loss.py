@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from PIL import Image
 from Register import Registers
 from model.BrownianBridge.BrownianBridgeModel import BrownianBridgeModel
-from model.BrownianBridge.LatentBrownianBridgeModel import LatentBrownianBridgeModel
+from model.BrownianBridge.LatentBrownianBridgeModel_pixel_loss import LatentBrownianBridgeModel
 from runners.DiffusionBasedModelRunners.DiffusionBaseRunner import DiffusionBaseRunner
 from runners.utils import weights_init, get_optimizer, get_dataset, make_dir, get_image_grid, save_single_image
 from tqdm.autonotebook import tqdm
@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 from torchmetrics.image.ssim import StructuralSimilarityIndexMeasure
 
-@Registers.runners.register_with_name('BBDMRunner')
+@Registers.runners.register_with_name('BBDMRunner_pixel_loss')
 class BBDMRunner(DiffusionBaseRunner):
     def __init__(self, config):
         super().__init__(config)

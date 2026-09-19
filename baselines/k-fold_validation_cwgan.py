@@ -31,6 +31,14 @@ CWGAN_DIR = r"C:\Users\ammic\Desktop\ClariGAN-DL\baselines\cwgan"
 DATASET_TRAIN_DIR = r"C:\Users\ammic\Desktop\BBDM-kfold\train"  # has A/ and B/ subdirs
 FOLD_LISTS_DIR = os.path.join(CWGAN_DIR, "fold_lists")
 
+# Where weights + val_log + loss_log are saved (per-fold subdir created automatically).
+# Relative paths resolve inside CWGAN_DIR. Set to an absolute path to redirect.
+CHECKPOINTS_DIR = "./checkpoints"
+
+# Where test.py writes generated images (per-fold subdir created automatically).
+# Relative paths resolve inside CWGAN_DIR. Set to an absolute path to redirect.
+RESULTS_DIR = "./results"
+
 # -------- training hyperparameters --------
 K = 10
 SEED = 42
@@ -135,6 +143,7 @@ def run_train(fold_idx, train_list, val_list):
         "--dataroot", train_list,
         "--val_dataroot", val_list,
         "--name", name,
+        "--checkpoints_dir", CHECKPOINTS_DIR,
         "--model", "pix2pix",          # cwgan reuses pix2pix model class with WGAN losses
         "--dataset_mode", "bbdm_aligned",
         "--direction", "AtoB",
@@ -163,6 +172,8 @@ def run_test(fold_idx, list_path, phase):
         sys.executable, "test.py",
         "--dataroot", list_path,
         "--name", name,
+        "--checkpoints_dir", CHECKPOINTS_DIR,
+        "--results_dir", RESULTS_DIR,
         "--model", "pix2pix",
         "--dataset_mode", "bbdm_aligned",
         "--direction", "AtoB",

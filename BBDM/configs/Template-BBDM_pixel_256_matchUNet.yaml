@@ -1,0 +1,112 @@
+# Pure Pixel-Space Brownian Bridge Diffusion Model (no VQGAN)
+# Variant A: UNet sized to roughly MATCH the trainable param count
+#            of the latent variant's UNet (rule "match trainable").
+# Tune model_channels up/down if the print-out doesn't match the latent run.
+runner: "BBDMRunner"
+training:
+  n_epochs: 50
+  n_steps: 200000
+  save_interval: 2
+  sample_interval: 2
+  validation_interval: 2
+  accumulate_grad_batches: 32
+
+testing:
+  clip_denoised: True
+  sample_num: 5
+
+data:
+  dataset_name: 'ClariGAN_stratified_pixel_BBDM_matchUNet'
+  dataset_type: 'custom_aligned'
+  dataset_config:
+    dataset_path: 'C:\Users\ammic\Desktop\BBDM-kfold'
+    image_size: 256
+    channels: 3
+    to_normal: True
+    flip: True
+  train:
+    batch_size: 1
+    shuffle: True
+  val:
+    batch_size: 1
+    shuffle: True
+  test:
+    batch_size: 1
+
+model:
+  model_name: "BBDM-pixel-matchUNet"
+  model_type: "BBDM"
+  latent_before_quant_conv: False
+  normalize_latent: False
+  only_load_latent_mean_std: False
+
+  EMA:
+    use_ema: True
+    ema_decay: 0.995
+    update_ema_interval: 8
+    start_ema_step: 30000
+
+  BB:
+    optimizer:
+      weight_decay: 0.000
+      optimizer: 'Adam'
+      lr: 1.e-4
+      beta1: 0.9
+
+    lr_scheduler:
+      factor: 0.5
+      patience: 3000
+      threshold: 0.0001
+      cooldown: 3000
+      min_lr: 5.e-7
+
+    params:
+      mt_type: 'linear'
+      objective: 'grad'
+      loss_type: 'l2'
+
+      skip_sample: True
+      sample_type: 'linear'
+      sample_step: 200
+
+      num_timesteps: 1000
+      eta: 1.0
+      max_var: 1.0
+
+      UNetParams:
+        image_size: 256
+        in_channels: 3
+        # Target: 288M (matches the Trainable Encoder Ablation trainable param count).
+        # Measured history at mc=128:
+        #   (1,1,2,2,4,4) -> 133M
+        #   (1,1,2,2,5,8) -> 300.75M
+        #   (1,1,2,2,4,9) -> 320M
+        #   (1,1,2,2,7,7) -> 326.31M
+        # Fit: total = 39.3 + 2.585*m6^2 + 2.323*m5^2 + 0.95*m5*m6
+        # (1,1,2,2,6,7) -> predicted 289.5M, closest to 288 (0.5% over).
+        # mc=128 makes every channel auto-divisible by 64, so any integer mult works.
+        model_channels: 128
+        out_channels: 3
+        num_res_blocks: 2
+        # attention only at low resolutions to keep memory tractable at 256x256
+        attention_resolutions: !!python/tuple
+          - 16
+          - 8
+        # 6 stages: 256 -> 128 -> 64 -> 32 -> 16 -> 8
+        # channels: 128, 128, 256, 256, 768, 896
+        channel_mult: !!python/tuple
+          - 1
+          - 1
+          - 2
+          - 2
+          - 6
+          - 7
+        conv_resample: True
+        dims: 2
+        num_heads: 8
+        num_head_channels: 64
+        use_scale_shift_norm: True
+        resblock_updown: True
+        use_spatial_transformer: False
+        context_dim:
+        condition_key: "nocond"
