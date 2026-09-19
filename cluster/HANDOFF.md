@@ -52,6 +52,15 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 16:04 **ALL SIX reeval FOLDS SUCCEEDED** (handoff pending-action #3 is done). claridi_primary
+  folds 0-5 now have the deliverable-format samples with explicit seeds, counts verified against
+  the fold table: 395/275/265/250/320/250 PNGs = 5 x (79/55/53/50/64/50) test tiles; every fold
+  has timing_fold_k.csv and a 300-byte seeds_fold_k.json.
+  Therefore `k-fold_samples/fold_{0..5}_specimen_grouped/` (the legacy wave-1 outputs, written by
+  the old sample_to_eval_combined_with_uncertainty path) are redundant. **SIZE REPORTED, NOT
+  DELETED** per the standing rule: 782 MB total — fold0 174, fold1 131, fold2 123, fold3 96,
+  fold4 138, fold5 121 MB. They are not in the deliverable layout (titled plots, condition and
+  ground-truth copies) and nothing downstream reads them. Awaiting the user's go-ahead.
 - 10:36 **GPU HAND-BACK COMPLETE.** GPUs 2, 5, 6, 8 are all idle (4 MiB each) and the runner is
   not refilling them; we are on GPUS="1 3 4 7 9" from here. Release times: GPU5 ~09:42 (job killed,
   re-queued), GPU6 ~09:42, GPU8 ~09:57, GPU2 10:36 (encoder fold 3 finished its eval).
