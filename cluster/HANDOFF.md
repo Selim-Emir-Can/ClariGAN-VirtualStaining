@@ -31,7 +31,36 @@ pixel_space assumed at the 150 GPU-h LOSO cap (13.6 h/fold) until the probe says
 | pass 2 (seed 5678) done | Mon 18:17 | Mon 02:29 |
 | pass 3 (seed 9012) done = everything | Tue Sep 22 00:59 | Mon Sep 21 08:11 |
 
+## REVISED TIMELINE (22:30 Sep 18, measured pixel cost 10.2 h/fold avg, not the 13.6 h cap)
+Supersedes the 21:10 table. Assumes the 10:00 Sep 19 hand-back to GPUs 5-9 and no failures.
+| seed-1234 fold complete (all experiments incl. pixel_space) | ETA |
+|---|---|
+| fold 0 | done 22:30 Fri Sep 18 (pixel fold 0 still running, ~08:30 Sat) |
+| fold 1 | Sat Sep 19 09:25 |
+| fold 2 | Sat Sep 19 13:10 |
+| fold 3 | Sat Sep 19 16:40 |
+| fold 4 | Sat Sep 19 19:24 |
+| fold 5 | Sun Sep 20 00:39 |
+| fold 6 | Sun Sep 20 05:12 |
+| fold 7 | Sun Sep 20 12:56 |
+| fold 8 | Sun Sep 20 17:57 |
+| fold 9 | Mon Sep 21 01:30 |
+| fold 10 | Mon Sep 21 07:21 |
+seed5678 pass ends Mon Sep 21 09:00; seed9012 pass ends **Mon Sep 21 14:39** = everything.
+That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space measured at
+10.2 h/fold instead of the 13.6 h worst case. Per-fold pixel cost varies 9.2-10.6 h with the
+fold's training-set size.
+
 ## Launches / completions / failures
+- 22:13 VALIDITY-CHECK UPLOAD DONE (the one upload the user authorised; nothing automatic runs).
+  `claridi_primary/samples/fold_0.parquet` (395 rows = 79 tiles x 5 gens, 28.6 MB), plus that
+  experiment's config.yaml and seeds_fold_0.json. Validated before sending: schema matches the
+  repo README field for field; only specimen A present, which is exactly fold 0's test specimen
+  per fold_assignments.csv (n_patches 79); gen_idx 0-4 map to seeds 1234-1238; gen0 is seed 1234
+  for all 79 tiles; sampled PNGs are 256x256 RGB. Parquet is written uncompressed on purpose
+  (PNG bytes are already compressed): 28.6 MB parquet vs 28 MB of loose PNGs, i.e. ~no size cost
+  for collapsing 395 files into 1.
+  NEXT UPLOAD IS MANUAL AND IN BULK. Everything else stays local in deliverables/parquet/.
 - 21:49 QUEUE: pixel probe launched on GPU 7 (fold 3's GPU freed first). Log:
   logs/q_pixel___folds_0___max_epoch_1___results_root__local_emir_ClariDi_probes_results___samples_root__local_emir_ClariDi_probes_samples___deliverables_root__local_emir_ClariDi_probes_deliv___tag_probe_pixel___eval_max_tiles_3.log
 - 21:52 PRUNE, fold 3 ONLY (13 GB -> 2.3 GB, kept top_model_epoch_10.pth + config.yaml).
