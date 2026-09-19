@@ -53,6 +53,10 @@ def parse_args():
     p.add_argument("--tag", default="eval")
     p.add_argument("--n_gpus_train", type=int, default=1, help="recorded in timing.csv only")
     p.add_argument("--max_tiles", type=int, default=None, help="debug: stop after this many tiles")
+    p.add_argument("--clip_denoised", action="store_true",
+                   help="default False for EVERY experiment: the original k-fold evaluation "
+                        "(sample_to_eval_combined_with_uncertainty) hardcoded clip_denoised=False "
+                        "and ignored testing.clip_denoised, including for the pixel-space model")
     return p.parse_args()
 
 
@@ -83,7 +87,7 @@ def main():
     cfg.training.device = [device]
     cfg.data.test.batch_size = 1
     cfg.data.dataset_type = "custom_aligned"
-    clip = bool(cfg.testing.clip_denoised)
+    clip = bool(a.clip_denoised)          # False unless explicitly requested (matches the original protocol)
 
     runner = get_runner(cfg.runner, cfg)
     net = runner.initialize_model(cfg)
