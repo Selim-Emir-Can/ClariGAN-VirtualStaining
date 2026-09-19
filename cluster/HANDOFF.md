@@ -52,6 +52,18 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 05:45 The baseline fix is CONFIRMED WORKING on a fresh job: pix2pix fold 2 (launched 01:54,
+  after the 01:15 fix) exported itself normally — 53 PNGs, real timing, seeds_fold_2.json 203
+  bytes with no "recovered" marker. Repairs so far, all automatic via repair_loop.sh:
+  unet_l1 f0 (by hand), pix2pix f0, pix2pix f1, unet_l1 f1, cwgan f0. Only cwgan f1 still
+  carries the old code.
+- 05:45 Closed a race in export_baseline_fold.py: it now skips a (baseline, fold) whose driver
+  process is still alive. Without that, a job launched after the fix does its own export while
+  the repair loop could be mid-repair on the same fold, and the repair's timing csv (blank
+  wall-clock, since it cannot recover it post hoc) could overwrite the job's real numbers.
+  The pre-existing output-count guard already prevented exporting a half-written fold (seen at
+  05:44: "pix2pix fold 2: 41 outputs but 53 test tiles — NOT exported"), but it did not cover
+  the window after the PNGs are complete.
 - 01:13 REAL BUG FOUND AND FIXED (affects ALL GAN baselines: pix2pix, cwgan, unet_l1).
   `repo/baselines/kfold_grouped_baselines.py` line ~107: `export_bare_outputs()` used `B`
   (the BASELINES entry), which is a local of `main()` -> `NameError: name 'B' is not defined`
