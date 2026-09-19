@@ -52,6 +52,20 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 09:45 HAND-BACK APPLIED EARLY (to scheduling), because waiting for 10:00 would have defeated it.
+  At 09:40:39 the runner launched `cwgan --folds 4` on **GPU 5** — one of the GPUs promised back at
+  10:00. cwgan is ~4.2 h/fold, so it would have held GPU 5 until ~13:50. The same was about to
+  happen on GPUs 6 and 8, whose jobs were due to end at ~09:42 and ~09:57, i.e. before the cutoff.
+  Actions: stopped the runner (queue_stop), killed that cwgan job **2 minutes into training**
+  (wrapper + driver + train.py child; GPU 5 verified back to 0% / 4 MiB), re-added the exact line
+  `cwgan --folds 4` to the TOP of queue.txt, then restarted the runner with GPUSET="1 3 4 7 9"
+  (verified in /proc/<pid>/environ). The 10:00 gpuset_switch.sh timer is now redundant and was
+  cancelled.
+  Net cost: ~2 minutes of compute. Net effect: GPUs 2, 5, 6, 8 are released as their current jobs
+  end (5 already idle; 6 ~09:42; 8 ~09:57; 2 ~10:36) instead of being refilled until 10:00.
+  NOTE for anyone re-arming a future hand-back: a delayed switch is not enough on its own — the
+  runner keeps filling the doomed GPUs right up to the deadline. Shrink GPUSET at least one
+  max-job-length (~5 h) before the GPUs are actually needed, or accept killing the stragglers.
 - 09:03 HAND-BACK SET CHANGED (user): free GPUs **2, 5, 6, 8**, keep **1, 3, 4, 7, 9**
   (was: free 1-4, keep 5-9). gpuset_switch.sh restarted with NEWSET="1 3 4 7 9", still firing
   10:00 Sep 19, still graceful (no job is killed).
