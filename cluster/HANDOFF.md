@@ -52,6 +52,31 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 23:10 TRACEBACK in logs/q_encoder___folds_0.log — BENIGN, no action needed. It is a dataloader
+  worker's multiprocessing finaliser losing a cleanup race:
+  `OSError: [Errno 39] Directory not empty: '/tmp/pymp-...'` inside `_remove_temp_dir`.
+  The job did NOT die: still 5 processes on GPU 8, advanced 15 -> 16/50, log still growing.
+  Expect more of these; they are noise, like the pynvml/pkg_resources warnings.
+- 23:12 DISK RISK (not ours, but it can kill the campaign): `/` (holds /home AND /tmp) is
+  **100% full, 23 GB free**. /tmp alone is 220 GB, dominated by other users' files
+  (/tmp/BBC_combined.zip is 122 GB). Our whole /tmp footprint is 0.96 GB in 2295 entries,
+  mostly empty pymp-* dirs. I did NOT delete anything of anyone else's, and did NOT delete our
+  pymp dirs either: a live dataloader worker owns some of them and they are 4 KB each (~7 MB total),
+  so the deletion risk outweighs the space gain.
+  MITIGATION APPLIED: `run_kfold.sh` now exports `TMPDIR=$ROOT/.cache/tmp` (on /local, 1 TB free)
+  alongside the existing TORCH_HOME line, so jobs launched from now on do not depend on `/` for
+  temp space. Backup: logs/run_kfold.sh.bak. Jobs already running still use /tmp.
+  If `/` does fill overnight, already-running jobs may die; the fix is to re-add their queue lines.
+  Worth telling the other users about that 122 GB zip in the morning.
+- 22:32 deleted `probes/` (4.5 GB, almost all of it 1-epoch probe checkpoints under probes/results).
+  The measurements that justify the LOSO decision were copied out first to
+  logs/probe_measurements/{pixel_space,probe_encoder_stock}_{timing_fold_0.csv,seeds_fold_0.json}.
+- 22:32 GPU audit: each of GPUs 1-9 holds exactly one of our jobs, GPU 0 is the other user's.
+  No leaked/duplicate processes.
+  CAUTION, cost me a wrong answer once tonight: `pgrep -f '<pattern>'` run from a shell whose
+  command line contains that pattern matches ITSELF and reports the job as alive. Use
+  `ps -u emir -o args= | grep -c -- '[-]-max_epoch 1'` style checks instead (bracket breaks
+  self-match). This is the same gotcha listed under "Gotchas learned tonight" below.
 - 22:13 VALIDITY-CHECK UPLOAD DONE (the one upload the user authorised; nothing automatic runs).
   `claridi_primary/samples/fold_0.parquet` (395 rows = 79 tiles x 5 gens, 28.6 MB), plus that
   experiment's config.yaml and seeds_fold_0.json. Validated before sending: schema matches the
