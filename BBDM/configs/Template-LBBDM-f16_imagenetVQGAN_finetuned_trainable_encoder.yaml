@@ -16,7 +16,7 @@ data:
   dataset_name: 'ClariGAN_stratified'
   dataset_type: 'custom_aligned'
   dataset_config:
-    dataset_path: 'C:\Users\ammic\Desktop\BBDM-kfold'
+    dataset_path: '/local/emir/ClariDi/data/bbdm'  # override with --data_root
     image_size: 256
     channels: 3
     to_normal: True
@@ -53,7 +53,7 @@ model:
 
   VQGAN:
     params:
-      ckpt_path: 'C:\Users\ammic\Desktop\ClariGAN-DL\taming-transformers\logs\2025-02-03T16-27-18_clariGAN_finetune\checkpoints\epoch=000022.ckpt' # 'C:\Users\ammic\Desktop\ClariGAN-DL\taming-transformers\logs\2025-01-09T12-30-34_vqgan_imagenet_f16_16384_finetuned-epoch22\checkpoints\last.ckpt' # 'C:\Users\ammic\Desktop\ClariGAN-DL\taming-transformers\pretrained_weights\last.ckpt'
+      ckpt_path: '/local/emir/ClariDi/weights/epoch=000022.ckpt'  # override with --vqgan_ckpt
       embed_dim: 256
       n_embed: 16384
       ddconfig:

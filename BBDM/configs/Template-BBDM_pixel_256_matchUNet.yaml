@@ -19,7 +19,7 @@ data:
   dataset_name: 'ClariGAN_stratified_pixel_BBDM_matchUNet'
   dataset_type: 'custom_aligned'
   dataset_config:
-    dataset_path: 'C:\Users\ammic\Desktop\BBDM-kfold'
+    dataset_path: '/local/emir/ClariDi/data/bbdm'  # override with --data_root
     image_size: 256
     channels: 3
     to_normal: True

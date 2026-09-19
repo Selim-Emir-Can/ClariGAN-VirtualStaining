@@ -341,6 +341,12 @@ class BaseRunner(ABC):
 
         train_dataset, val_dataset, test_dataset = get_dataset(self.config.data, train_set, val_set, test_set)
 
+        # Worker count per loader. Hardcoded at 8 upstream, which oversubscribes the
+        # box when several folds train concurrently (6 jobs x 8 = 48 processes).
+        # Set data.num_workers in the config, or CLARIDI_NUM_WORKERS in the env.
+        num_workers = int(os.environ.get("CLARIDI_NUM_WORKERS",
+                          getattr(self.config.data, "num_workers", 8)))
+
         train_sampler = None
         val_sampler = None
         test_sampler = None
@@ -350,34 +356,34 @@ class BaseRunner(ABC):
             test_sampler = torch.utils.data.distributed.DistributedSampler(test_dataset)
             train_loader = DataLoader(train_dataset,
                                       batch_size=self.config.data.train.batch_size,
-                                      num_workers=8,
+                                      num_workers=num_workers,
                                       drop_last=True,
                                       sampler=train_sampler)
             val_loader = DataLoader(val_dataset,
                                     batch_size=self.config.data.val.batch_size,
-                                    num_workers=8,
+                                    num_workers=num_workers,
                                     drop_last=True,
                                     sampler=val_sampler)
             test_loader = DataLoader(test_dataset,
                                      batch_size=self.config.data.test.batch_size,
-                                     num_workers=8,
+                                     num_workers=num_workers,
                                      drop_last=True,
                                      sampler=test_sampler)
         else:
             train_loader = DataLoader(train_dataset,
                                       batch_size=self.config.data.train.batch_size,
                                       shuffle=self.config.data.train.shuffle,
-                                      num_workers=8,
+                                      num_workers=num_workers,
                                       drop_last=True)
             val_loader = DataLoader(val_dataset,
                                     batch_size=self.config.data.val.batch_size,
                                     shuffle=self.config.data.val.shuffle,
-                                    num_workers=8,
+                                    num_workers=num_workers,
                                     drop_last=True)
             test_loader = DataLoader(test_dataset,
                                      batch_size=self.config.data.test.batch_size,
                                      shuffle=False,
-                                     num_workers=8,
+                                     num_workers=num_workers,
                                      drop_last=True)
 
         epoch_length = len(train_loader)

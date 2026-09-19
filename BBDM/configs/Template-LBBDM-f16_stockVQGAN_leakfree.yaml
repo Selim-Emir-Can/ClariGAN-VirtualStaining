@@ -1,19 +1,25 @@
+# Leak-free ablation: L-BBDM in the latent space of the STOCK ImageNet f16/16384
+# VQGAN, which has never seen tissue data. With specimen-grouped folds no component
+# has seen the held-out specimen, so this run is specimen-held-out end to end.
+# Architecture is identical to the fine-tuned variant; only ckpt_path differs.
+# Do NOT confuse with Template-LBBDM-f16_imagenetVQGAN.yaml, which despite its name
+# points at a 'finetuned-full' checkpoint (trained on everything, and missing locally).
 # Latent Brownian Bridge Diffusion Model Template(Latent Space)
-runner: "BBDMRunner_pixel_loss"
+runner: "BBDMRunner"
 training:
   n_epochs: 50
   n_steps: 200000
   save_interval: 2
   sample_interval: 2
   validation_interval: 2
-  accumulate_grad_batches: 32
+  accumulate_grad_batches: 4
 
 testing:
   clip_denoised: False
   sample_num: 5
 
 data:
-  dataset_name: 'ClariGAN_stratified'
+  dataset_name: 'ClariGAN_stockVQGAN'
   dataset_type: 'custom_aligned'
   dataset_config:
     dataset_path: '/local/emir/ClariDi/data/bbdm'  # override with --data_root
@@ -22,13 +28,13 @@ data:
     to_normal: True
     flip: True
   train:
-    batch_size: 1
+    batch_size: 8
     shuffle: True
   val:
-    batch_size: 1
+    batch_size: 8
     shuffle: True
   test:
-    batch_size: 1
+    batch_size: 8
     # shuffle: False
 
 model:
@@ -53,7 +59,7 @@ model:
 
   VQGAN:
     params:
-      ckpt_path: '/local/emir/ClariDi/weights/epoch=000022.ckpt'  # override with --vqgan_ckpt
+      ckpt_path: '/local/emir/ClariDi/weights/vqgan_imagenet_f16_16384_stock.ckpt'  # stock ImageNet VQGAN, never fine-tuned on tissue; override with --vqgan_ckpt
       embed_dim: 256
       n_embed: 16384
       ddconfig:

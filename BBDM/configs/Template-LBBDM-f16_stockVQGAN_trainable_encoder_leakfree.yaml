@@ -1,19 +1,24 @@
+# Trainable-encoder ablation initialised from the STOCK ImageNet VQGAN instead of the
+# tissue-fine-tuned one. The encoder then adapts to tissue using only the fold's training
+# split, so this run is BOTH leak-free end to end AND domain-adapted. The original
+# trainable-encoder config starts from epoch=000022.ckpt, whose initialisation saw all 11
+# specimens; that is the contamination this variant removes.
 # Latent Brownian Bridge Diffusion Model Template(Latent Space)
-runner: "BBDMRunner_pixel_loss"
+runner: "BBDMRunner_trainable_encoder"
 training:
   n_epochs: 50
   n_steps: 200000
   save_interval: 2
   sample_interval: 2
   validation_interval: 2
-  accumulate_grad_batches: 32
+  accumulate_grad_batches: 4
 
 testing:
   clip_denoised: False
   sample_num: 5
 
 data:
-  dataset_name: 'ClariGAN_stratified'
+  dataset_name: 'ClariGAN_stockVQGAN_trainable_encoder'
   dataset_type: 'custom_aligned'
   dataset_config:
     dataset_path: '/local/emir/ClariDi/data/bbdm'  # override with --data_root
@@ -22,13 +27,13 @@ data:
     to_normal: True
     flip: True
   train:
-    batch_size: 1
+    batch_size: 8
     shuffle: True
   val:
-    batch_size: 1
+    batch_size: 8
     shuffle: True
   test:
-    batch_size: 1
+    batch_size: 8
     # shuffle: False
 
 model:
@@ -53,7 +58,7 @@ model:
 
   VQGAN:
     params:
-      ckpt_path: '/local/emir/ClariDi/weights/epoch=000022.ckpt'  # override with --vqgan_ckpt
+      ckpt_path: '/local/emir/ClariDi/weights/vqgan_imagenet_f16_16384_stock.ckpt'  # stock init; override with --vqgan_ckpt
       embed_dim: 256
       n_embed: 16384
       ddconfig:
