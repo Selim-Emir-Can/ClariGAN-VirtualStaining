@@ -1,3 +1,42 @@
+# Morning report (maintained by the overnight Claude session, started 2026-09-18 20:47)
+
+## Timeline
+- 20:47 took over. queue_runner.sh alive (pid 3780427). GPUs 1-9 all busy: claridi folds 0-5
+  on GPUs 4-9 (epoch 31-33/50 at 20:47), stock folds 0-2 on GPUs 1-3 (epoch 14-15/50).
+  No Traceback / CalledProcessError in any log. Ceiling PNG jobs at ~239/753 each.
+  Disk: du -sh ClariDi = 120G; /local 9.2T/11T used (978G free).
+
+## Queue order (changed by the user 21:15 Sep 18): seed-major, then fold-major
+Old experiment-major order backed up to `logs/queue_before_reorder_2026-09-18.txt` (same 86 jobs,
+only reordered). Pass 1 = seed 1234, folds 0..10 in order; each fold block = the experiments that
+fold still lacks (claridi 6-10, stock 3-10, reeval 0-5, pix2pix, cwgan, encoder, pixel_space slot)
++ unet_l1. Pass 2 = primary seed 5678 folds 0..10. Pass 3 = primary seed 9012 folds 0..10.
+Scope unchanged (user confirmed 21:20: only the primary gets extra seeds). pixel_space lines go into
+the `# pixel_space slot` comments in queue.txt once the probe decides (LOSO: one per fold block;
+grouped-5: the five slots after folds 1,3,5,7,9).
+
+## Timeline (simulated 21:10 Sep 18 from measured per-fold costs; 9 GPUs until 10:00 Sep 19, then 5)
+User request (21:00): hand GPUs 1-4 back to the cluster at 10:00 Sep 19. Implemented as
+`gpuset_switch.sh` (nohup, pid 635128, log `logs/gpuset_switch.log`): at 10:00 it touches queue_stop,
+waits for queue_runner.sh to exit, restarts it with GPUSET="5 6 7 8 9". Jobs already running on
+GPUs 1-4 at that moment are NOT killed; they finish on their own.
+pixel_space assumed at the 150 GPU-h LOSO cap (13.6 h/fold) until the probe says otherwise.
+| milestone | LOSO-11 pixel | grouped-5 pixel |
+|---|---|---|
+| primary folds 0-5 trained / legacy eval done | ~21:40 / ~22:05 Sep 18 | same |
+| probe done, pixel decision | ~22:50 Sep 18 | same |
+| fold 0 block done (pixel is the last job in every block) | Sat 11:41 | Sat 02:53 |
+| fold 5 block done | Sun 09:29 | Sat 20:23 |
+| pass 1 (seed 1234) done = all six paper experiments + unet_l1 | Mon 19:59 | Mon 01:17 |
+| pass 2 (seed 5678) done | Mon 18:17 | Mon 02:29 |
+| pass 3 (seed 9012) done = everything | Tue Sep 22 00:59 | Mon Sep 21 08:11 |
+
+## Launches / completions / failures
+- (none yet beyond the 20:15 queue launch of `stock --folds 2` on GPU 3)
+
+## Decisions / pending
+- Pixel-space probe: not yet started (queue position 6, after claridi 6-10).
+
 # ClariDi re-run — handoff for the next Claude session (written 2026-09-18 20:50)
 
 Read this first, then `RUN_NOTES.md` (protocol, scope, caveats) and `README_cluster.md`.
