@@ -12,6 +12,7 @@ train.py / test.py via subprocess, exactly as the old drivers did.
   python kfold_grouped_baselines.py --baseline pix2pix --data_root <dir> --gpu 4 --folds 0
 """
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -23,12 +24,21 @@ from specimen_kfold import (load_manifest, make_folds, assert_no_leakage,  # noq
                             fold_table, format_fold_table, save_fold_assignments)
 
 BASELINES = {
-    "pix2pix": dict(dir=os.path.join(HERE, "pytorch-CycleGAN-and-pix2pix"),
+    "pix2pix": dict(dir=os.path.join(HERE, "pytorch-CycleGAN-and-pix2pix"), model="pix2pix",
                     epoch_flags=("--n_epochs", "--n_epochs_decay"), gpu_flag=None,
-                    batch_size=1, extra=[]),                       # newer fork: no --display_id / --gpu_ids
-    "cwgan":   dict(dir=os.path.join(HERE, "cwgan"),
+                    batch_size=1, extra=[],                       # newer fork: no --display_id / --gpu_ids
+                    # reviewer 10: dropout ON at inference, batch-norm statistics fixed, seeded
+                    test_extra=["--eval", "--dropout_at_inference", "--inference_seed", "1234"],
+                    train_extra=["--seed", "1234"]),
+    "unet_l1": dict(dir=os.path.join(HERE, "pytorch-CycleGAN-and-pix2pix"), model="unet_l1",
+                    epoch_flags=("--n_epochs", "--n_epochs_decay"), gpu_flag=None,
+                    batch_size=1, extra=[],
+                    # deterministic at inference: dropout off, batch-norm fixed
+                    test_extra=["--eval", "--inference_seed", "1234"],
+                    train_extra=["--seed", "1234"]),
+    "cwgan":   dict(dir=os.path.join(HERE, "cwgan"), model="pix2pix",
                     epoch_flags=("--niter", "--niter_decay"), gpu_flag="--gpu_ids",
-                    batch_size=4, extra=["--display_id", "0"]),   # older fork: disable visdom (train.py only; test.py rejects it)
+                    batch_size=4, extra=["--display_id", "0"], test_extra=[], train_extra=["--seed", "1234"]),   # older fork: disable visdom (train.py only; test.py rejects it)
 }
 
 
@@ -94,7 +104,8 @@ def export_bare_outputs(a, records, fold, images_dir, t_train, t_test, bs):
         w.writerow([exp, k, n, round(t_train, 1), round(t_test, 1), round(t_test / max(n, 1), 4),
                     a.n_epochs + a.n_epochs_decay, bs, a.gpu, 1, 1])
     with open(os.path.join(a.deliverables_root, exp, f"seeds_fold_{k}.json"), "w") as f:
-        f.write('{"note": "GAN baseline: one deterministic output per tile (gen0); no sampling seed"}\n')
+        json.dump({"note": "one output per tile (gen0)", "inference_mode": B["test_extra"],
+                   "training_seed": B["train_extra"], "model": B["model"]}, f, indent=1)
     print(f"fold {k}: exported {n} bare outputs -> {out}", flush=True)
 
 
@@ -138,7 +149,7 @@ def main():
         print(f"\n=== {a.baseline} fold {k}: test={f['test_specimens']} val={f['val_specimens']} "
               f"train={len(f['train'])} pairs ===", flush=True)
 
-        common = ["--name", name, "--checkpoints_dir", ckpt_dir, "--model", "pix2pix",
+        common = ["--name", name, "--checkpoints_dir", ckpt_dir, "--model", B["model"],
                   "--dataset_mode", "bbdm_aligned", "--direction", "AtoB",
                   "--netG", a.netG, "--ngf", str(a.ngf), "--load_size", "256", "--crop_size", "256",
                   "--input_nc", "3", "--output_nc", "3"] + gpu_args
@@ -147,13 +158,13 @@ def main():
         if not a.skip_train:
             cmd = [sys.executable, "train.py", "--dataroot", tr, "--val_dataroot", va,
                    "--batch_size", str(bs),
-                   B["epoch_flags"][0], str(a.n_epochs), B["epoch_flags"][1], str(a.n_epochs_decay)] + common + B["extra"]
+                   B["epoch_flags"][0], str(a.n_epochs), B["epoch_flags"][1], str(a.n_epochs_decay)] + common + B["extra"] + B["train_extra"]
             print(" ".join(cmd), flush=True)
             subprocess.run(cmd, check=True, cwd=B["dir"], env=env)
         t_train = time.time() - t_train
         t_test = time.time()
         cmd = [sys.executable, "test.py", "--dataroot", te, "--results_dir", results_dir,
-               "--phase", "test", "--num_test", "100000"] + common
+               "--phase", "test", "--num_test", "100000"] + common + B["test_extra"]
         print(" ".join(cmd), flush=True)
         subprocess.run(cmd, check=True, cwd=B["dir"], env=env)
         print(f"fold {k} done -> {os.path.join(results_dir, name, 'test_latest')}", flush=True)

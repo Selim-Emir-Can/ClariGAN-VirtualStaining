@@ -124,6 +124,27 @@ exactly one fold; samples are never pruned without reporting the size first.
 Checkpoints: keep the exact 2.37 GB top checkpoint per fold, not stripped; only the
 primary's 11 go to HF (model release), the rest stay on the cluster.
 
+## Second pass (reviewer CRITICAL 10), queued after the six paper experiments
+
+- **Multi-seed on the primary**: claridi_primary re-trained with training seeds 5678 and
+  9012 on the SAME LOSO-11 folds (`claridi_primary_seed5678`, `_seed9012`). Sampling seeds
+  unchanged (gen j = 1234 + j) so the comparison isolates training-seed variance.
+- **Deterministic U-Net with L1** (`unet_l1`): the pix2pix generator (unet_256, ngf=144,
+  ~273M) trained with L1 only, no discriminator / adversarial / perceptual term
+  (`baselines/pytorch-CycleGAN-and-pix2pix/models/unet_l1_model.py`). Inference in eval
+  mode: dropout off, batch-norm statistics fixed. One output per tile as gen0.
+- Deferred, to be stated as future work: conditional diffusion without the Brownian
+  bridge; separate-scale (5x5-only / 10x10-only) models.
+
+## GAN inference modes and seeds
+
+- pix2pix: `--eval --dropout_at_inference --inference_seed 1234`: batch-norm statistics
+  fixed, dropout layers re-enabled, seeded once before inference (reviewer 10's request).
+- unet_l1: `--eval`: dropout off, batch-norm fixed, fully deterministic.
+- cWGAN: the fork's default (no eval flag, train-mode BN and dropout), as originally run.
+- Both GAN forks now take `--seed` (1234) and set cudnn deterministic=True, benchmark=False,
+  matching the BBDM runs (main.set_random_seed) and eval_fold.py. Recorded in run_metadata.
+
 ## Reporting conventions
 
 - Single-generation metrics are the headline. Best-of-five appears only as an explicitly

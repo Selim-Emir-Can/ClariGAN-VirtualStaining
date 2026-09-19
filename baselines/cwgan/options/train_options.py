@@ -37,6 +37,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
         parser.add_argument('--critic_iters', type=int, default=5, help='no of discriminator updates per each generator update')
         # Validation monitoring (no checkpoint selection -- just logged each epoch).
+        parser.add_argument('--seed', type=int, default=1234, help='training seed; also sets cudnn deterministic=True, benchmark=False')
         parser.add_argument('--val_dataroot', type=str, default='', help='path to val list file. If set, per-epoch L1 between fake_B and real_B on val is logged to checkpoints_dir/name/val_log.txt')
 
         self.isTrain = True

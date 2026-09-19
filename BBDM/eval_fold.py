@@ -69,6 +69,8 @@ def to_uint8(t):
 def main():
     a = parse_args()
     device = torch.device("cpu") if a.gpu == "-1" else torch.device(f"cuda:{a.gpu}")
+    torch.backends.cudnn.deterministic = True     # same flags as training (main.set_random_seed)
+    torch.backends.cudnn.benchmark = False
     records = load_manifest(a.manifest or os.path.join(a.data_root, "manifest.csv"), a.data_root)
     folds = make_folds(records, a.scheme, a.n_folds)
     fold = folds[a.fold]
@@ -133,7 +135,8 @@ def main():
     with open(os.path.join(exp_dir, f"seeds_fold_{a.fold}.json"), "w") as f:
         json.dump({"base_seed": a.seed, "gen_seed": {j: a.seed + j for j in range(a.sample_num)},
                    "rule": "torch.manual_seed(base_seed + gen_idx) immediately before each generation",
-                   "sample_steps": int(cfg.model.BB.params.sample_step), "clip_denoised": clip}, f, indent=1)
+                   "sample_steps": int(cfg.model.BB.params.sample_step), "clip_denoised": clip,
+                   "cudnn": {"deterministic": True, "benchmark": False}}, f, indent=1)
     with open(os.path.join(exp_dir, f"timing_fold_{a.fold}.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["experiment", "fold", "n_test_tiles", "sample_num", "sample_steps",
                                           "eval_wall_s", "per_generation_infer_s_mean", "per_patch_infer_s_mean",

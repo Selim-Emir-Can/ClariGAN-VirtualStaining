@@ -32,6 +32,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--lr_decay_iters', type=int, default=50, help='multiply by a gamma every lr_decay_iters iterations')
         # Validation monitoring (no checkpoint selection -- just logged each epoch).
         # Pass a list file (same format as --dataroot under list_aligned/bbdm_aligned).
+        parser.add_argument('--seed', type=int, default=1234, help='training seed; also sets cudnn deterministic=True, benchmark=False')
         parser.add_argument('--val_dataroot', type=str, default='', help='path to val list file. If set, per-epoch L1 between fake_B and real_B on val is logged to checkpoints_dir/name/val_log.txt')
 
         self.isTrain = True

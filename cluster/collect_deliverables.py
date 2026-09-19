@@ -17,7 +17,10 @@ EXPERIMENTS = {   # experiment name -> (protocol, run_kfold target, notes)
     "trainable_encoder":          ("LOSO-11", "encoder",       "VQGAN encoder trainable, fine-tuned init (same as primary); isolates frozen vs trainable"),
     "pixel_space":                ("TBD",     "pixel",         "pure pixel-space BBDM, no VQGAN"),
     "pix2pix":                    ("LOSO-11", "pix2pix",       "GAN baseline, ngf=144, one deterministic output per tile"),
-    "cwgan":                      ("LOSO-11", "cwgan",         "GAN baseline, ngf=144, one deterministic output per tile"),
+    "cwgan":                      ("LOSO-11", "cwgan",         "GAN baseline, ngf=144, one output per tile"),
+    "claridi_primary_seed5678":   ("LOSO-11", "claridi",       "primary re-trained with training seed 5678; sampling seeds unchanged"),
+    "claridi_primary_seed9012":   ("LOSO-11", "claridi",       "primary re-trained with training seed 9012; sampling seeds unchanged"),
+    "unet_l1":                    ("LOSO-11", "unet_l1",       "deterministic U-Net (pix2pix generator, unet_256 ngf=144) trained with L1 only; eval mode at inference"),
 }
 
 
@@ -58,8 +61,14 @@ def build_metadata(experiments):
                     "grouping": "specimen column (Z is part of D; Hpart1 is part of H)", "resolution": "256x256, Resize then ToTensor, bit-identical to on-the-fly"},
         "split": {"protocol": "leave-one-specimen-out, 11 folds; val = one whole training specimen of the same tissue",
                   "fold_assignments": "fold_assignments.csv", "leakage_assertion": "assert_no_leakage passed for all folds"},
-        "seeds": {"training_seed": 1234, "generation_rule": "torch.manual_seed(1234 + gen_idx) immediately before each generation",
-                  "gen_seed": {j: 1234 + j for j in range(5)}, "cudnn": {"deterministic": True, "benchmark": False}},
+        "seeds": {"training_seed": "1234 (claridi_primary_seed5678 / _seed9012 use 5678 / 9012); GAN baselines 1234", "generation_rule": "torch.manual_seed(1234 + gen_idx) immediately before each generation",
+                  "gen_seed": {j: 1234 + j for j in range(5)},
+                  "cudnn": {"bbdm_training": {"deterministic": True, "benchmark": False, "source": "main.set_random_seed"},
+                            "bbdm_sampling": {"deterministic": True, "benchmark": False, "source": "eval_fold.py"},
+                            "gan_training_and_inference": {"deterministic": True, "benchmark": False, "source": "train.py/test.py patch"}},
+                  "gan_inference": {"pix2pix": "eval mode with dropout re-enabled (batch-norm fixed), inference seed 1234",
+                                    "cwgan": "fork default (no eval flag): train-mode BN and dropout, as originally run",
+                                    "unet_l1": "eval mode: dropout off, batch-norm fixed"}},
         "sampling": {"sample_num": 5, "sample_steps": 200, "sample_type": "linear", "eta": 1.0},
         "training": {"batch_size": 8, "accumulate_grad_batches": 4, "effective_batch": 32, "n_gpus_per_fold": 1,
                      "n_epochs": 50, "checkpoint_selection": "lowest validation loss (top_model_epoch_*.pth)",

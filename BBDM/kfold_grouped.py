@@ -57,7 +57,10 @@ def parse_args():
                    help="comma-separated fold indices to run (default: all)")
     p.add_argument("--gpu_ids", default="0", help="e.g. 0 or 0,1,2 (cpu=-1)")
     p.add_argument("--port", default="12355", help="DDP master port")
-    p.add_argument("--seed", type=int, default=1234)
+    p.add_argument("--seed", type=int, default=1234, help="training seed")
+    p.add_argument("--sample_seed", type=int, default=1234,
+                   help="sampling seed passed to eval_fold.py (gen j = sample_seed + j); kept at 1234 "
+                        "for multi-seed training runs so they stay comparable")
     p.add_argument("--tag", default="specimen_grouped",
                    help="suffix used in dataset_name / sample dir names")
     p.add_argument("--accumulate_grad_batches", type=int, default=None,
@@ -256,7 +259,7 @@ def main():
             cmd = [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "eval_fold.py"),
                    "--config", a.config, "--ckpt", ckpt, "--data_root", a.data_root,
                    "--scheme", a.scheme, "--n_folds", str(a.n_folds), "--fold", str(fold["fold"]),
-                   "--experiment", exp, "--out_root", deliv, "--gpu", first_gpu, "--seed", str(a.seed),
+                   "--experiment", exp, "--out_root", deliv, "--gpu", first_gpu, "--seed", str(a.sample_seed),
                    "--n_gpus_train", str(max(1, len(a.gpu_ids.split(","))))]
             if a.vqgan_ckpt: cmd += ["--vqgan_ckpt", a.vqgan_ckpt]
             if a.manifest: cmd += ["--manifest", a.manifest]

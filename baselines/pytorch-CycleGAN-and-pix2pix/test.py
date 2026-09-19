@@ -29,6 +29,7 @@ See frequently asked questions at: https://github.com/junyanz/pytorch-CycleGAN-a
 
 import os
 from pathlib import Path
+import torch
 from options.test_options import TestOptions
 from data import create_dataset
 from models import create_model
@@ -66,6 +67,15 @@ if __name__ == "__main__":
     # For [CycleGAN]: It should not affect CycleGAN as CycleGAN uses instancenorm without dropout.
     if opt.eval:
         model.eval()
+        if getattr(opt, "dropout_at_inference", False):   # BN stats fixed, dropout active
+            n = 0
+            for name in model.model_names:
+                for m in getattr(model, "net" + name).modules():
+                    if isinstance(m, torch.nn.Dropout):
+                        m.train(); n += 1
+            print(f"[inference] eval mode with {n} dropout layers re-enabled (batch-norm fixed)")
+    torch.manual_seed(getattr(opt, "inference_seed", 1234)); torch.cuda.manual_seed_all(getattr(opt, "inference_seed", 1234))
+    torch.backends.cudnn.deterministic = True; torch.backends.cudnn.benchmark = False
     for i, data in enumerate(dataset):
         if i >= opt.num_test:  # only apply our model to opt.num_test images.
             break

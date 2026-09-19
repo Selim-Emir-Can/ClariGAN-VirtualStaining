@@ -7,6 +7,8 @@
 #   GPUS=0,1,2 ./run_kfold.sh stock    -> leak-free stock-ImageNet-VQGAN ablation
 #   GPUS=4 ./run_kfold.sh pix2pix        -> pix2pix baseline on the same grouped folds (single GPU)
 #   GPUS=4 ./run_kfold.sh cwgan          -> cWGAN baseline on the same grouped folds (single GPU)
+#   GPUS=4 ./run_kfold.sh unet_l1        -> deterministic U-Net (pix2pix generator, L1 only) on the same folds
+#   GPUS=4 ./run_kfold.sh claridi --seed 5678 --tag specimen_grouped_seed5678 --experiment claridi_primary_seed5678
 set -euo pipefail
 ROOT=/local/emir/ClariDi
 DATA=$ROOT/data/bbdm256          # pre-resized, bit-identical to data/bbdm, 12x faster to load
@@ -47,7 +49,7 @@ case "$TARGET" in
     python eval_fold.py --config configs/Template-LBBDM-f16_imagenetVQGAN_finetuned.yaml --ckpt "$CK" \
       --data_root $DATA --scheme $SCHEME --fold $F --experiment claridi_primary \
       --out_root $ROOT/deliverables --gpu $GPUS --seed 1234 ;;
-  pix2pix|cwgan)
+  pix2pix|cwgan|unet_l1)
     cd $ROOT/repo/baselines
     python kfold_grouped_baselines.py --baseline $TARGET --data_root $DATA --scheme $SCHEME --gpu $GPUS \
       --out_root $ROOT/baselines_out/$TARGET "$@" ;;
