@@ -52,6 +52,25 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 08:35 POLICY TIGHTENED (user): keep ONLY what regenerates the stains. prune_gan_checkpoints.sh
+  now keeps a single file per GAN fold, `latest_net_G.pth` — the one test.py loads. Also deleted:
+  all discriminators (netD is never built at inference) and `50_net_*` (end-of-training weights
+  that did NOT produce the outputs). A further 8 GB over the 8 finished folds.
+  Running totals: baselines_out 97 -> 32 GB, project 197 -> 125 GB.
+  Per finished GAN fold the checkpoint dir is now ~1.06 GB, down from ~11.7 GB.
+  Given up deliberately: resuming GAN training, and inference from the epoch-50 weights.
+  BBDM side already complies: each fold keeps only config.yaml + top_model_epoch_*.pth, which is
+  exactly what eval_fold.py loads. Folds still training hold optimizer state and auto-prune
+  after their eval.
+  RE-RUN `./prune_gan_checkpoints.sh` (dry) then `--yes` as later folds finish; it skips any fold
+  whose export is unfinished or whose driver is alive. At 33 folds this keeps ~35 GB instead of
+  ~386 GB.
+  NOT deleted, flagged for the user instead: results/*/LBBDM-f16/{image,log} (training sample
+  grids + tensorboard, ~55 MB per fold, ~1.8 GB total) and baselines_out/*/results (~133 MB,
+  holds the _fake_B PNGs already exported to deliverables/ plus _real_A/_real_B copies of data
+  we already have in data_256). Not needed to reproduce anything; say the word and they go.
+  k-fold_samples/ is 782 MB — the legacy wave-1 outputs, redundant once reeval folds 0-5 have all
+  succeeded (0-4 done, fold 5 still queued).
 - 08:25 GAN INTERMEDIATE CHECKPOINTS PRUNED (user approved explicitly). `prune_gan_checkpoints.sh`
   (dry run by default, --yes to delete). Freed 74 GB across 8 finished folds; baselines_out went
   97 GB -> 40 GB, whole project 197 GB -> 134 GB.
