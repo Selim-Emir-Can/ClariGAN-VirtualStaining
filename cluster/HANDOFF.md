@@ -18,7 +18,7 @@ grouped-5: the five slots after folds 1,3,5,7,9).
 ## Timeline (simulated 21:10 Sep 18 from measured per-fold costs; 9 GPUs until 10:00 Sep 19, then 5)
 User request (21:00): hand GPUs 1-4 back to the cluster at 10:00 Sep 19. Implemented as
 `gpuset_switch.sh` (nohup, pid 635128, log `logs/gpuset_switch.log`): at 10:00 it touches queue_stop,
-waits for queue_runner.sh to exit, restarts it with GPUSET="5 6 7 8 9". Jobs already running on
+waits for queue_runner.sh to exit, restarts it with GPUSET="1 3 4 7 9". Jobs already running on
 GPUs 1-4 at that moment are NOT killed; they finish on their own.
 pixel_space assumed at the 150 GPU-h LOSO cap (13.6 h/fold) until the probe says otherwise.
 | milestone | LOSO-11 pixel | grouped-5 pixel |
@@ -52,6 +52,17 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 09:03 HAND-BACK SET CHANGED (user): free GPUs **2, 5, 6, 8**, keep **1, 3, 4, 7, 9**
+  (was: free 1-4, keep 5-9). gpuset_switch.sh restarted with NEWSET="1 3 4 7 9", still firing
+  10:00 Sep 19, still graceful (no job is killed).
+  Reason it is the better set — measured at 09:00 from each job's own per-epoch rate:
+    GPU5 pix2pix f3 ends ~09:35 | GPU6 stock f4 ~09:42 | GPU8 cwgan f2 ~09:57  -> all three are
+    already done BEFORE the 10:00 cutoff, so they are handed back essentially immediately
+    (the runner simply stops refilling them).
+    GPU2 encoder f3 ends ~10:36 -> free ~36 min after the cutoff.
+  The old set would have held GPUs 1 and 3 until ~13:45 and ~13:34 (pixel f2, cwgan f3), so the
+  new choice returns four GPUs by ~10:36 instead of ~13:45.
+  Jobs still running on the freed GPUs at 10:00 are NOT killed; they finish first.
 - 08:35 POLICY TIGHTENED (user): keep ONLY what regenerates the stains. prune_gan_checkpoints.sh
   now keeps a single file per GAN fold, `latest_net_G.pth` — the one test.py loads. Also deleted:
   all discriminators (netD is never built at inference) and `50_net_*` (end-of-training weights
