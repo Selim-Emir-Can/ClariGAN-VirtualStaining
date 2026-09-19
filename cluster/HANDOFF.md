@@ -52,6 +52,41 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 08:25 GAN INTERMEDIATE CHECKPOINTS PRUNED (user approved explicitly). `prune_gan_checkpoints.sh`
+  (dry run by default, --yes to delete). Freed 74 GB across 8 finished folds; baselines_out went
+  97 GB -> 40 GB, whole project 197 GB -> 134 GB.
+  KEPT per fold: `latest_net_G.pth` + `latest_net_D.pth` (the weights test.py actually loaded, so
+  they reproduce the deliverable PNGs) AND `50_net_G.pth` + `50_net_D.pth` (true end of training),
+  plus the small logs. VERIFIED FIRST: 50_net_G.pth and latest_net_G.pth are NOT byte-identical
+  (md5 differs) — "latest" is saved mid-epoch-50 at iter 245000, the epoch file at iter 249600 —
+  so keeping only one of them would have lost either reproducibility or the final model.
+  DELETED: the 9 intermediate epochs 5..45 (_net_G 1051 MB + _net_D 11 MB each), which nothing in
+  this pipeline reads. ~9.5 GB per fold.
+  GUARDS (a fold is skipped unless all hold): its deliverable export finished (timing_fold_k.csv
+  present AND seeds_fold_k.json non-empty), no driver process alive for that (baseline, fold), and
+  both kept generator files exist. In-progress folds were correctly skipped.
+  Re-run it as later folds finish; at 11 folds x 3 baselines it recovers ~313 GB in total.
+  NOT done and not advised: parquet-wrapping or compressing checkpoints (zstd saves only 7.5% on
+  these float32 tensors, measured), and fp16 conversion is UNSAFE here — one batch-norm running_var
+  peaks at 369090, far above fp16's 65504 ceiling, so it would become inf.
+- 07:35 **FOLD 0 IS COMPLETE across all seven seed-1234 experiments** — the first fold the
+  manuscript side can score end to end. Verified counts: claridi_primary, claridi_stock_vqgan,
+  trainable_encoder, pixel_space = 395 PNGs each (79 tiles x 5 gens); pix2pix, cwgan, unet_l1
+  = 79 each (deterministic, gen0 only). All seven have timing_fold_0.csv and a non-empty
+  seeds_fold_0.json. pixel_space fold 0 measured 7.77 s/generation.
+- 07:20 PIXEL-SPACE PROJECTION VALIDATED against the first completed pixel fold (fold 1):
+  probe said 7.8176 s/generation and 11:31 per epoch; fold 1 measured 7.963 s/gen (+1.9%)
+  and 12:02 per epoch (+4.5%). Eval: predicted 0.60 h, actual 0.61 h. So the 112.4 GPU-h
+  LOSO-11 projection is sound (a few % conservative at worst) and stays far under the
+  150 GPU-h cap. The LOSO decision stands.
+- 06:28 NameError INCIDENT CLOSED. cwgan fold 1 was the last job carrying the pre-fix code; the
+  repair loop fixed it at 06:14. `find deliverables -name 'seeds_fold_*.json' -size 0` now returns
+  nothing. Five folds repaired in total (pix2pix 0/1, unet_l1 0/1, cwgan 0/1 — six), all with their
+  real wall-clock timing intact; no job was re-run and no compute was lost.
+- 06:28 CEILINGS DONE: both VQGAN ceiling jobs finished at 753/753 and exited cleanly
+  (CEILING_PNGS_DONE in logs/ceiling_pngs_{finetuned,stock}.log). Packed and verified:
+  deliverables/parquet/ceilings/vqgan_finetuned.parquet (73.7 MB) and vqgan_stock.parquet
+  (78.4 MB), 753 rows each, tile_id set identical to manifest.csv, images 256x256 RGB.
 - 05:45 The baseline fix is CONFIRMED WORKING on a fresh job: pix2pix fold 2 (launched 01:54,
   after the 01:15 fix) exported itself normally — 53 PNGs, real timing, seeds_fold_2.json 203
   bytes with no "recovered" marker. Repairs so far, all automatic via repair_loop.sh:
