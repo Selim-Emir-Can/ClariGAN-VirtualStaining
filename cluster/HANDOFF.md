@@ -52,6 +52,16 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 13:27 Sep 20 **FOLDS 0-5 CHECKPOINT ARCHIVE COMPLETE AND VERIFIED.**
+  https://huggingface.co/SelimEmirCan/claridi-checkpoints — public, gated="manual" (re-confirmed
+  from repo_info after upload, not just at creation). 68 files, 77.2 GB.
+  `upload_checkpoints.py --folds 0-5 --verify` -> **66 match, 0 size mismatch, 0 missing**.
+  Per experiment: claridi_primary, claridi_stock_vqgan, trainable_encoder, pixel_space = 12 files
+  each (6 folds x [top_model_epoch_*.pth + config.yaml]); pix2pix, cwgan, unet_l1 = 6 each
+  (latest_net_G.pth per fold).
+  Still NOT deleted locally — deletion is the user's call. Deleting the verified folds 0-5
+  checkpoints would free ~74 GB (41.4 BBDM + 19.1 GAN + 13.3 pixel_space).
+  Folds 6-10 are not archived yet; re-run with --folds 6-10 once they finish.
 - 11:49 Sep 20 user asked to use 2 idle GPUs, then (11:51) to hand them back 3 h later.
   Added GPUs 5 and 6 (NOT GPU 0 — the handoff marks it as another user's). They immediately
   picked up `unet_l1 --folds 8` (11:49:46) and `claridi --folds 9` (11:50:07).
