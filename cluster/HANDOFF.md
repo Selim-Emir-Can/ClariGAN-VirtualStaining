@@ -52,6 +52,22 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 11:44 Sep 20 CHECKPOINT ARCHIVE STARTED (user-directed). New repo
+  **https://huggingface.co/SelimEmirCan/claridi-checkpoints** — PUBLIC with `gated="manual"`
+  (verified: private=False, gated=manual), chosen by the user over private to avoid private-storage
+  quota limits. Minimal model card on purpose: a gated repo's PAGE is world-visible, so the card
+  deliberately does NOT describe the method, protocol or experiment list (the detailed card stays
+  on the private claridi-results dataset).
+  Uploading folds 0-5 of ALL SEVEN experiments: 66 files, 77.2 GB, ~1.7 h at the observed
+  12.4 MB/s. Script `upload_checkpoints.py` (--dry / --verify / upload; resumable — skips files
+  whose remote size already matches). Log: logs/upload_checkpoints.log.
+  Remote layout `<experiment>/fold_<k>/`: diffusion = top_model_epoch_*.pth + config.yaml;
+  GAN = latest_net_G.pth only (the weights test.py loads).
+  **NOTHING IS DELETED YET.** Deletion happens only after `--verify` confirms every file's remote
+  size matches local, and is a separate explicit step.
+  USER'S END GOAL: archive everything to HF, then delete the whole project from the cluster.
+  Flagged to the user and still open: the eventual full archive is ~187 GB (150 GB BBDM
+  checkpoints + 35 GB GAN + ~2 GB outputs), and HF would become the ONLY copy.
 - 01:57 Sep 20 **FOLDS 0-5 ARE COMPLETE ACROSS ALL SEVEN seed-1234 EXPERIMENTS**
   (claridi_primary, claridi_stock_vqgan, trainable_encoder, pixel_space, pix2pix, cwgan, unet_l1).
   That is 6 of 11 folds fully scoreable end to end, plus both VQGAN ceilings. Fold 6 is at 3/7
