@@ -52,6 +52,23 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 16:15 Sep 20 **HF RATE LIMIT HIT — fixed, worth knowing before the next upload.**
+  `HTTP 429: You have exceeded the rate limit for repository commits (128 per hour)` on
+  claridi-results. Cause: upload_results.py called `upload_file` once per file = one COMMIT per
+  file, and the results sync is 140 files. It died after 131; the 9 stragglers were
+  unet_l1/seeds_fold_{3..8}.json, both ceilings parquets and run_metadata.json.
+  FIX: both uploaders now use `create_commit` with a list of `CommitOperationAdd`, batching many
+  files into ONE commit — upload_results.py BATCH=40, upload_checkpoints.py BATCH=6 (bigger files).
+  140 files now costs 4 commits instead of 140. Both remain idempotent (skip files whose remote
+  size already matches), so a re-run only sends what is missing.
+  NOTE for the folds 6-10 checkpoint archive: that is another ~66 files; with BATCH=6 it is 11
+  commits, comfortably inside the limit. The earlier 77 GB checkpoint upload succeeded only
+  because it was 66 commits, just under the 128/hour ceiling.
+  Retry window: HF said ~1 hour from 15:45.
+- 15:03 Sep 20 BORROWED GPUs 5 AND 6 RETURNED, as the user asked (~3 h). GPU6 freed 13:54
+  (claridi fold 9 finished + evaluated), GPU5 freed 15:02 (unet_l1 fold 8 finished, deliverables
+  written). Neither job was killed and both produced complete deliverables. Back to
+  GPUS="1 3 4 7 9". The borrow yielded two extra completed fold-jobs.
 - 13:27 Sep 20 **FOLDS 0-5 CHECKPOINT ARCHIVE COMPLETE AND VERIFIED.**
   https://huggingface.co/SelimEmirCan/claridi-checkpoints — public, gated="manual" (re-confirmed
   from repo_info after upload, not just at creation). 68 files, 77.2 GB.
