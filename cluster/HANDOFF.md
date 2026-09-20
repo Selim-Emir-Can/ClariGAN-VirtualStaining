@@ -52,6 +52,12 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 01:57 Sep 20 **FOLDS 0-5 ARE COMPLETE ACROSS ALL SEVEN seed-1234 EXPERIMENTS**
+  (claridi_primary, claridi_stock_vqgan, trainable_encoder, pixel_space, pix2pix, cwgan, unet_l1).
+  That is 6 of 11 folds fully scoreable end to end, plus both VQGAN ceilings. Fold 6 is at 3/7
+  (waiting on trainable_encoder, pixel_space, cwgan, unet_l1).
+  The manuscript side can compute per-specimen macro-averages over folds 0-5 now; the remaining
+  five folds only extend the average, they do not change the layout.
 - 16:04 **ALL SIX reeval FOLDS SUCCEEDED** (handoff pending-action #3 is done). claridi_primary
   folds 0-5 now have the deliverable-format samples with explicit seeds, counts verified against
   the fold table: 395/275/265/250/320/250 PNGs = 5 x (79/55/53/50/64/50) test tiles; every fold
