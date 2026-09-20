@@ -52,6 +52,24 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 16:57 Sep 20 **RESULTS REPO CONSOLIDATED** (user: "you are committing too much, make the parquet
+  files bigger and fewer"). New layout on claridi-results, ONE commit (+15 / -126):
+    <experiment>/samples.parquet   ALL folds in one file (26-358 MB), rows sorted (fold, tile_id,
+                                   gen_idx), ~1 row group per fold so one fold reads cheaply
+    <experiment>/seeds.json        {"fold_<k>": {...}} — replaces 11 seeds_fold_<k>.json
+    <experiment>/config.yaml, timing.csv   unchanged
+  Per-fold files (samples/fold_<k>.parquet, seeds_fold_<k>.json) DELETED from the remote in the
+  same commit. README.md layout + schema heading updated to match (only that section; the
+  scoring notes are untouched). Verified: 29/29 match, 0 stale. Remote went 1653 -> ~1542 files;
+  the non-data set is now 4 files x 7 experiments + 2 ceilings + 6 root files.
+  Merged parquet verified byte-identical to its per-fold sources (3500/3500 PNGs, claridi_primary).
+  TOOLING: `consolidate_parquet.py` builds deliverables/parquet_merged/ from the per-fold packer
+  output (which stays as the local source of truth; pack_loop.sh keeps producing it, nothing
+  auto-uploads). `upload_results.py` now syncs the merged layout in exactly one commit and
+  deletes any stale per-fold remote files. `upload_checkpoints.py` BATCH raised 6 -> 12
+  (~28 GB/commit; folds 6-10 = 6 commits).
+  AT CAMPAIGN END: `python consolidate_parquet.py && python upload_results.py` = 1 commit total.
+  NOTE for the inspecting session: filter on the `fold` column; there are no per-fold files.
 - 16:46 Sep 20 **RESULTS UPLOAD COMPLETE AND VERIFIED** after the batched-commit fix.
   `upload_results.py --verify` -> **140 match, 0 mismatch, 0 missing**. The 9 rate-limited
   stragglers went up in a single commit.
