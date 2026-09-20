@@ -52,6 +52,15 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 11:49 Sep 20 user asked to use 2 idle GPUs, then (11:51) to hand them back 3 h later.
+  Added GPUs 5 and 6 (NOT GPU 0 — the handoff marks it as another user's). They immediately
+  picked up `unet_l1 --folds 8` (11:49:46) and `claridi --folds 9` (11:50:07).
+  At 11:52 shrank GPUSET straight back to "1 3 4 7 9" rather than arming a 3-hour timer.
+  Reason: those two jobs run ~3.0 h and ~2.5 h, finishing ~14:50 and ~14:20 — i.e. the 3-hour
+  window is exactly one job each. Any refill would be >=2.5 h and overrun the window, which is
+  the same trap as the 10:00 hand-back (see the 09:45 entry). Nothing was killed; GPUs 5 and 6
+  go idle when their current job ends and are not refilled.
+  Net: the two GPUs get ~3 h of useful work and come back on time.
 - 11:44 Sep 20 CHECKPOINT ARCHIVE STARTED (user-directed). New repo
   **https://huggingface.co/SelimEmirCan/claridi-checkpoints** — PUBLIC with `gated="manual"`
   (verified: private=False, gated=manual), chosen by the user over private to avoid private-storage
