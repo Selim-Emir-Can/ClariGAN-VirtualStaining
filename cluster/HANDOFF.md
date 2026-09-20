@@ -52,6 +52,20 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 16:46 Sep 20 **RESULTS UPLOAD COMPLETE AND VERIFIED** after the batched-commit fix.
+  `upload_results.py --verify` -> **140 match, 0 mismatch, 0 missing**. The 9 rate-limited
+  stragglers went up in a single commit.
+  claridi-results (PRIVATE dataset): 1653 files, 1.61 GB — data_256 (1507), per-experiment
+  samples/fold_<k>.parquet + config.yaml + timing.csv + seeds_fold_<k>.json, ceilings x2,
+  fold_assignments.{csv,json,txt}, manifest.csv, run_metadata.json.
+  Folds present per experiment: claridi_primary and claridi_stock_vqgan 0-9; trainable_encoder,
+  pix2pix, unet_l1 0-8; pixel_space and cwgan 0-7. The pack+upload loop keeps adding as folds land
+  — re-run `python upload_results.py` (idempotent, batched) after the last folds finish.
+  NOTE the other session should know: the parquets hold GENERATIONS ONLY (bare 256x256 PNGs,
+  one row per tile x gen). Ground truth and condition images are NOT duplicated per experiment —
+  they live once in data_256/train/{B,A} and join on tile_id via manifest.csv. There are no
+  titled_plots and no uncertainty_maps in the deliverables (those exist only in the legacy
+  k-fold_samples/ for primary folds 0-5, which were never uploaded).
 - 16:15 Sep 20 **HF RATE LIMIT HIT — fixed, worth knowing before the next upload.**
   `HTTP 429: You have exceeded the rate limit for repository commits (128 per hour)` on
   claridi-results. Cause: upload_results.py called `upload_file` once per file = one COMMIT per
