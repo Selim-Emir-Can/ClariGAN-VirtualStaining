@@ -52,6 +52,22 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 10:40 Sep 21 VISUAL CHECK of a "bad" primary output (F_row1_col3_5x5, fold 5, specimen F),
+  prompted by the user. Diagnostic only; the manuscript side owns scoring.
+  (a) Not a bad draw: all 5 gens ~15 dB, same failure (cell cluster placed right, red tissue
+      hallucinated over a dark background). Tile is median for fold 5; fold 5 = 14.74 dB, matches
+      the other session's table exactly. Overexposure of the condition is NOT the cause.
+  (b) CORRECTION of my own PSNR-based claim: on this tile the GAN/L1 baselines are visually far
+      WORSE (pix2pix dark blur + checkerboard grid, cwgan structureless smear, unet_l1 near-black)
+      while all three diffusion models produce plausible tissue in the right place. PSNR rewards
+      near-black outputs against a mostly-dark GT; LPIPS ranks like the eye: stock 0.54, primary
+      0.57 < baselines 0.62-0.65. Do NOT cite a "baselines beat diffusion on hard specimens"
+      inversion — it is a PSNR artifact. Montage: scratchpad F_row1_col3_montage.png.
+  (c) NEW FINDING worth a look: trainable_encoder is far worse than the primary on 10/11 folds
+      (5-8 dB on folds 2,3,4,8,10), visually a hallucinated green cell field unrelated to GT; LPIPS
+      0.80 on this tile. Selected epochs were late, so not an early-stop artifact. Plausibly the
+      genuine ablation result (unfreezing the VQGAN encoder under the diffusion loss destabilises
+      the latent space), but the manuscript side should eyeball a few before citing it.
 - 09:24 Sep 21 **ALL SEVEN PAPER EXPERIMENTS COMPLETE — 77/77 fold-jobs.** pixel_space fold 10
   finished at 09:2x (8.11 s/gen). `collect_deliverables.py --check` PASSES: claridi_primary,
   claridi_stock_vqgan, trainable_encoder, pixel_space, pix2pix, cwgan, unet_l1 each at 753/753
