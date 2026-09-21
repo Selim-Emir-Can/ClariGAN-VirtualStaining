@@ -77,6 +77,7 @@
 - The picker (review/index.html) is ready: grid of one gen per tile, filters fold/specimen/tissue/
   scale/model, click -> condition | GT | gen0 of all 9 models | the 5 draws of primary/stock/pixel;
   flags good/ok/bad (+note) in localStorage, "export flags" -> claridi_flags.json.
+  11:20 Sep 21: per-draw grading strip added (hotkeys 1-4, titled condition|GT|gen panels); see log.
 - Agreed review plan: (1) one pass over primary gen0 fold by fold, flag bad/good with a note;
   (2) for bad tiles open the 5 draws (1-2 good = sampling problem; all bad = conditioning/data);
   (3) compare stock VQGAN and pixel_space on the same tiles (encoder implicated or not);
@@ -165,6 +166,20 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 11:20 Sep 21 PICKER UPGRADED at the user's request (review/index.html; backup logs/index.html.bak_*).
+  Detail view now opens with a GRADING STRIP for the primary: five titled panels, one per draw,
+  each = condition | ground truth | gen j (seed 1234+j) with the draw's LPIPS/PSNR as context.
+  Hotkeys 1 good / 2 acceptable / 3 poor / 4 fail grade the focused draw and auto-advance to the
+  next draw, then to the next tile; 0 clears; up/down move the focus; g/o/b whole-tile flags and
+  the note still work. "grade" dropdown picks which model is graded (primary default; stock,
+  pixel, seed5678, seed9012 available for review step 3). Grid cards show the 5 grades and are
+  bordered by the median grade; flag filter gained graded / not fully graded / any draw fail /
+  all draws >=3 / mixed. Export is the same claridi_flags.json, now with
+  {tile: {flag, note, grades: {model: [g0..g4]}}}. review/crosstab_flags.py extended: per model,
+  draw-level distribution, tile classes (all fine / MIXED = some draws fine -> sampling problem /
+  SYSTEMATIC = all 5 bad -> conditioning or data), cross-tabbed by specimen, tissue, scale and
+  dark-background bin, plus the systematic and mixed tile lists. JS syntax-checked with node,
+  page serves HTTP 200; both tested on a synthetic flags file. Old flags in localStorage are kept.
 - 10:55 Sep 21 NEW SESSION TOOK OVER (handoff block read in full, RUN_NOTES read). State verified:
   queue.txt empty; queue_runner.sh alive (pid 3270718, GPUSET 0-9); pack_loop, repair_loop,
   compute_metrics (350/753) and the picker (127.0.0.1:8897, HTTP 200) all alive. seed-9012:
