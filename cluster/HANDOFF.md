@@ -52,6 +52,14 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 08:04 Sep 21 user: "use the idle gpus as needed to cut the finish time to 12:00". The other user
+  had left entirely (0,2,5,6,8 idle). Runner restarted on GPUSET="0 1 2 3 4 5 6 7 8 9" (GPU 0
+  included this time on the user's explicit instruction; it was idle). The five idle GPUs took
+  seed-9012 folds 0-4 within 90 s; no OOM. Projected per-GPU release times given to the user;
+  everything releases by ~11:57.
+- 08:49 Sep 21 **claridi_primary_seed5678 COMPLETE, 11/11** — verified 3765 PNGs, 753/753 unique
+  tiles, 11/11 non-empty seeds files. Seed pass 11/22. seed-9012: 9/11 launched, 2 queue lines
+  left. Paper set still 76/77 (pixel f10 on GPU 3, epoch ~40, ETA ~11:26).
 - 04:50 Sep 21 **FIVE OF SEVEN PAPER EXPERIMENTS COMPLETE (11/11 each):** claridi_primary,
   claridi_stock_vqgan, trainable_encoder, unet_l1, cwgan. pix2pix is 11/11 too (fold 10 done
   21:02 Sep 20) -> six complete. Paper fold-jobs 76/77; the ONLY remaining paper job is
