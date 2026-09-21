@@ -52,6 +52,15 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 09:24 Sep 21 **ALL SEVEN PAPER EXPERIMENTS COMPLETE — 77/77 fold-jobs.** pixel_space fold 10
+  finished at 09:2x (8.11 s/gen). `collect_deliverables.py --check` PASSES: claridi_primary,
+  claridi_stock_vqgan, trainable_encoder, pixel_space, pix2pix, cwgan, unet_l1 each at 753/753
+  tiles over folds 0-10, 0 unknown tiles, 0 tiles in two folds, gens_per_tile 5 (diffusion) / 1
+  (deterministic); ceilings 753/753 both; claridi_primary_seed5678 also 753/753 (11/11).
+  Deliverables 5.36 GB on disk. Remaining GPU work: claridi_primary_seed9012 only (9/11 launched,
+  2 queued, 0 finished; ETA ~12:00). NOT uploaded yet — final HF sync is one command, one commit:
+  `python consolidate_parquet.py && python upload_results.py`, to run after seed-9012 completes
+  (or now for the paper set, on the user's word).
 - 08:04 Sep 21 user: "use the idle gpus as needed to cut the finish time to 12:00". The other user
   had left entirely (0,2,5,6,8 idle). Runner restarted on GPUSET="0 1 2 3 4 5 6 7 8 9" (GPU 0
   included this time on the user's explicit instruction; it was idle). The five idle GPUs took
