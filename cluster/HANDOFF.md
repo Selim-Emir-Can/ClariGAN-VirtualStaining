@@ -7,9 +7,9 @@
   trainable_encoder, pixel_space, pix2pix, cwgan, unet_l1. `python collect_deliverables.py --check`
   PASSES (753/753 tiles per experiment, each tile in exactly one fold, 5 gens diffusion / 1 gen
   deterministic, ceilings 753/753). claridi_primary_seed5678 also complete and verified (11/11).
-- ONLY GPU WORK LEFT: claridi_primary_seed9012 — folds 0-6 and 8 done; fold 7 in eval (GPU 1),
-  folds 9, 10 training on GPUs 3, 8 (fold 10 last, ETA ~12:25; updated 10:55 by the new session). queue.txt is EMPTY. When these finish, all GPU work
-  for the campaign is done and the runner just idles.
+- NO GPU WORK LEFT (12:10 Sep 21): claridi_primary_seed9012 complete 11/11 and verified; the
+  full `collect_deliverables.py --check` passes for all nine experiments (see the 12:10 entry).
+  queue.txt is EMPTY; the runner idles; other users have since taken GPUs 1-7 and 9.
 - Runner GPUSET is "0 1 2 3 4 5 6 7 8 9" (user: "use the idle gpus as needed", 08:04 Sep 21).
   The busy-GPU test (fixed 23:45 Sep 20) treats a GPU as busy if ANY user has a process on it or
   >2 GB is used, so it will not collide with other users. User austinchi grabs free GPUs
@@ -166,6 +166,18 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 12:10 Sep 21 **ALL GPU WORK FOR THE CAMPAIGN IS DONE — 99/99 fold-jobs (77 paper + 22 seed).**
+  seed-9012 fold 7 (126 tiles, 2.67 s/gen, top epoch 40), fold 9 (59 tiles, 2.48 s/gen, top epoch
+  16 — the earliest selection in any pass; others 36-46), fold 10 (53 tiles, 2.51 s/gen, top epoch
+  44) all finished and auto-pruned. `python collect_deliverables.py --check` at 12:07 PASSES: all
+  nine experiments folds 0-10, 753/753 tiles, 0 unknown, 0 tiles in two folds, gens_per_tile 5
+  (diffusion) / 1 (deterministic); ceilings 753/753 both; total deliverables 6.09 GB.
+  Zero emir processes on any GPU; queue_runner.sh idles (pid 3270718, queue empty). GPUs 1-7 and 9
+  were taken by another user within minutes of release (21.7 GB each) — not ours, nothing to do.
+  Project 201 GB, /local 849 GB free. seed-9012 selected epochs: 42 36 40 44 44 46 36 40 46 16 44.
+  NEXT (on the user's word only): final HF results sync `python consolidate_parquet.py &&
+  python upload_results.py` (one commit); checkpoint archive of folds 6-10 + both seed passes
+  (add the seed dirs to upload_checkpoints.py first); then deletions.
 - 12:10 Sep 21 **VISUAL REVIEW, 5x5 PASS DELIVERED BY THE USER** (claridi_flags.json, copied to
   logs/claridi_flags_5x5pass_*.json; cross-tab in logs/crosstab_flags_20260921_1159.txt).
   Primary, per-draw grades 1 good / 2 acceptable / 3 bad / 4 completely incorrect. Graded: all
