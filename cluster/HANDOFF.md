@@ -52,6 +52,21 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 23:45 Sep 20 **REAL FAILURE, ROOT-CAUSED AND FIXED.** encoder f10 died of CUDA OOM on GPU 3
+  ~1 min after launch: user austinchi's 33 GB process (pid 2658963) landed on GPU 3 at 23:44:36,
+  9 s before our launch at 23:44:45. The driver then fell through to eval, found no checkpoint,
+  and exited (FileNotFoundError) — no orphan eval this time, nothing written, partial dir empty.
+  ROOT CAUSE: queue_runner.sh's busy_gpus() only counted OUR OWN compute processes, so any GPU
+  another user had just taken looked free. FIX (queue_runner.sh, backup in logs/): a GPU is busy
+  if ANY user has a compute process on it OR memory.used > 2000 MiB (a free A6000 sits at 4 MiB).
+  Verified against live state. Re-added `encoder --folds 10` at the top; runner restarted on
+  GPUSET="1 3 4 7 9" (unchanged) — it now correctly refuses GPU 3 while it is occupied.
+  CLUSTER STATE at 23:46: austinchi holds GPUs 0,2,3,5,6,8 (37 GB each) and SHARES GPU 4 with
+  our seed-5678 f1 run (45.3/49.1 GB, no OOM so far, epoch ~20). We have 1, 7, 9 exclusively.
+  Effective capacity is ~4 GPUs, not 5, until GPU 3 or others free up. The runner will pick GPU 3
+  back up automatically when it is free. Nothing of the other user's was touched.
+  ETA IMPACT: remaining ~70 GPU-h (3 re-queued fold-10 jobs = 18 h, 20 seed runs = 50 h, plus
+  in-flight) on ~4 GPUs -> everything done ~17:00-18:00 Mon Sep 21 (was ~09:00-11:00 on 8).
 - 22:36-22:45 Sep 20 USER REVERSED THE BORROW: "cancel the jobs on the 3 idle GPUs". Killed
   encoder f10 (GPU5), pixel f10 (GPU6), unet_l1 f10 (GPU8) ~1 h into training (~3 GPU-h lost),
   re-added their exact lines to the TOP of queue.txt (ahead of the seed pass), restarted the runner
