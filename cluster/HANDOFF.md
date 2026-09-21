@@ -52,6 +52,12 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 19:37 Sep 20 FOLD 8 COMPLETE across all seven experiments -> folds 0-8 fully scoreable (9/11).
+  Fold 9 at 4/7 (waiting on pixel_space, cwgan, unet_l1); fold 10 just started (claridi 10
+  launched 19:07). NOT re-uploaded yet: per the user's "fewer, bigger commits" rule the HF results
+  repo is refreshed once at the end (`consolidate_parquet.py && upload_results.py` = 1 commit).
+  The remote currently holds folds 0-7 for every experiment plus 8-9 where they were done at
+  16:57.
 - 16:57 Sep 20 **RESULTS REPO CONSOLIDATED** (user: "you are committing too much, make the parquet
   files bigger and fewer"). New layout on claridi-results, ONE commit (+15 / -126):
     <experiment>/samples.parquet   ALL folds in one file (26-358 MB), rows sorted (fold, tile_id,
