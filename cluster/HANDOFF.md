@@ -166,6 +166,11 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 11:55 Sep 21 PICKER: review split by scale (user: 5x5 crops first, 10x10 later). The scale
+  filter now defaults to 5x5 (179 tiles; 10x10 = 574) and all header selections persist in the
+  browser (localStorage "claridi_filters"). Status line shows per-scale progress
+  ("5x5: n/179 graded · 10x10: n/574 graded") for the model being graded. Auto-advance already
+  respects the filter, so a 5x5 pass never steps into a 10x10 tile.
 - 11:35 Sep 21 PICKER DETAIL VIEW = TITLED PLOTS ONLY (user: the titled_plot images are what the
   condition|GT|output comparison is for; display those and nothing else). The legacy titled plots
   in k-fold_samples/ cover primary folds 0-5 only and were drawn from the WAVE-1 generations, which
