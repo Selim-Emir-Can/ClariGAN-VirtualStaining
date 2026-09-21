@@ -166,6 +166,18 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 11:35 Sep 21 PICKER DETAIL VIEW = TITLED PLOTS ONLY (user: the titled_plot images are what the
+  condition|GT|output comparison is for; display those and nothing else). The legacy titled plots
+  in k-fold_samples/ cover primary folds 0-5 only and were drawn from the WAVE-1 generations, which
+  are not the deliverable PNGs (md5 differs), so they cannot be used for grading the deliverables.
+  NEW `review/make_titled_plots.py [model...]` (CPU, Pool(8), idempotent) rebuilds 768x256
+  Condition | Ground Truth | Output strips from the deliverable PNGs with the runner's own
+  add_titles_and_concat routine (same default font/black title bar) -> review/titled/<model>/
+  fold_<k>/<tile>_gen<j>.png. Run for claridi_primary: 3765 plots, ~0.9 GB, derived and
+  regenerable (log logs/make_titled_plots.log). The detail view now shows exactly the five titled
+  plots per tile (one per draw, focused draw highlighted, 1-4 grading as before); the all-models
+  row, the extra 5-draw rows and the per-draw metric text are gone. Other models get titled plots
+  only if the script is run for them (stock/pixel/seed runs: ~0.9 GB each).
 - 11:20 Sep 21 PICKER UPGRADED at the user's request (review/index.html; backup logs/index.html.bak_*).
   Detail view now opens with a GRADING STRIP for the primary: five titled panels, one per draw,
   each = condition | ground truth | gen j (seed 1234+j) with the draw's LPIPS/PSNR as context.
