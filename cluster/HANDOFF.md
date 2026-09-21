@@ -38,9 +38,7 @@
 - `SelimEmirCan/claridi-results` (PRIVATE dataset): consolidated layout — <exp>/samples.parquet (ALL
   folds in one file, rows sorted fold/tile_id/gen_idx, ~1 row group per fold), <exp>/config.yaml,
   timing.csv, seeds.json; ceilings/*.parquet; fold_assignments.*, manifest.csv, run_metadata.json,
-  data_256/. Currently holds folds 0-9 per experiment (as of 16:57 Sep 20) — STALE vs disk.
-  FINAL SYNC = `python consolidate_parquet.py && python upload_results.py` (idempotent, ONE commit,
-  also deletes any stale per-fold remote files). Run it once seed9012 is complete, on the user's word.
+  data_256/. FINAL SYNC DONE 12:50 Sep 21: all 9 experiments x 11 folds, verified 37/37 match.
   README on the repo was updated to the consolidated layout; parquets hold GENERATIONS ONLY —
   GT/condition live once in data_256/train/{B,A}, join on tile_id via manifest.csv.
 - `SelimEmirCan/claridi-checkpoints` (PUBLIC, gated=manual, minimal card on purpose): folds 0-5 of
@@ -166,6 +164,11 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 12:50 Sep 21 **RESULTS SYNC COMPLETE AND VERIFIED.** upload_results.py: one commit, +30 files
+  -0, ALL RESULT UPLOADS FINISHED; `--verify` -> 37 match, 0 mismatch, 0 missing, 0 stale
+  per-fold files. SelimEmirCan/claridi-results now holds all 9 experiments x 11 folds
+  (samples.parquet + config.yaml + timing.csv + seeds.json each), both ceilings, root files,
+  data_256. 2.40 GB consolidated set. Checkpoint archive still uploading (see 12:30 entry).
 - 12:30 Sep 21 USER GO-AHEAD (verbatim intent): sync all results to HF now; after everything is
   uploaded, delete all experiment model checkpoints from the cluster — NOT weights/ (the VQGAN
   ckpts). IN PROGRESS, both detached (survive session close):
