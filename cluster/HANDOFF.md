@@ -52,6 +52,11 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 04:50 Sep 21 **FIVE OF SEVEN PAPER EXPERIMENTS COMPLETE (11/11 each):** claridi_primary,
+  claridi_stock_vqgan, trainable_encoder, unet_l1, cwgan. pix2pix is 11/11 too (fold 10 done
+  21:02 Sep 20) -> six complete. Paper fold-jobs 76/77; the ONLY remaining paper job is
+  pixel_space fold 10 (GPU 3, epoch 19/50, ETA ~11:15). All 33 GAN folds are pruned to
+  latest_net_G.pth. Seed pass: 3/22 done, folds 3-6 of seed 5678 running on GPUs 1,4,7,9.
 - 02:19 Sep 21 **FOLDS 0-9 COMPLETE across all seven experiments (10/11 fully scoreable).**
   Paper fold-jobs 73/77. Fold 10 has claridi_primary, stock and pix2pix done; encoder (GPU 9),
   pixel (GPU 3, the long pole, ~11:15), cwgan (GPU 1) and unet_l1 (GPU 4) are running.
