@@ -7,8 +7,8 @@
   trainable_encoder, pixel_space, pix2pix, cwgan, unet_l1. `python collect_deliverables.py --check`
   PASSES (753/753 tiles per experiment, each tile in exactly one fold, 5 gens diffusion / 1 gen
   deterministic, ceilings 753/753). claridi_primary_seed5678 also complete and verified (11/11).
-- ONLY GPU WORK LEFT: claridi_primary_seed9012 — folds 0-6 done; folds 7, 8, 9, 10 RUNNING on
-  GPUs 1, 3, 4, 8 (fold 10 last, ETA ~12:00). queue.txt is EMPTY. When these finish, all GPU work
+- ONLY GPU WORK LEFT: claridi_primary_seed9012 — folds 0-6 and 8 done; fold 7 in eval (GPU 1),
+  folds 9, 10 training on GPUs 3, 8 (fold 10 last, ETA ~12:25; updated 10:55 by the new session). queue.txt is EMPTY. When these finish, all GPU work
   for the campaign is done and the runner just idles.
 - Runner GPUSET is "0 1 2 3 4 5 6 7 8 9" (user: "use the idle gpus as needed", 08:04 Sep 21).
   The busy-GPU test (fixed 23:45 Sep 20) treats a GPU as busy if ANY user has a process on it or
@@ -165,6 +165,24 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 10:55 Sep 21 NEW SESSION TOOK OVER (handoff block read in full, RUN_NOTES read). State verified:
+  queue.txt empty; queue_runner.sh alive (pid 3270718, GPUSET 0-9); pack_loop, repair_loop,
+  compute_metrics (350/753) and the picker (127.0.0.1:8897, HTTP 200) all alive. seed-9012:
+  folds 0-6 AND 8 complete (fold 8 finished ~10:40, 68 tiles x 5, pruned to top_model_epoch_46);
+  fold 7 in eval on GPU 1 (top_model_epoch_40, 570 of 5x tiles PNGs written so far);
+  fold 9 training on GPU 3 (epoch 39/50, ETA ~11:40 incl. eval); fold 10 on GPU 8 (epoch 20/50,
+  ETA ~12:25). No CalledProcessError/OOM/RuntimeError in any q_*.log. GPUs 0,2,4,5,6,7,9 idle.
+  ARMED: (a) log watcher on logs/q_*.log + queue_done.txt + queue_runner.log (tr '\r' '\n',
+  grep CalledProcessError|CUDA out of memory|RuntimeError|No space left|Killed|Traceback|
+  GPU N <-|s/generation|pruned checkpoint dir); (b) a waiter that runs
+  `python collect_deliverables.py --check` once seed-9012 folds 7, 9, 10 have their seeds files
+  and no eval_fold.py remains. Result will be recorded here.
+  NEW TOOL for the visual review: `review/crosstab_flags.py <claridi_flags.json>` (CPU, read-only)
+  cross-tabs the exported picker flags by specimen (with its fold), tissue, scale, masked and
+  GT dark-background bin, tallies note keywords, and lists bad tiles with the 5-draw LPIPS spread
+  of the primary plus stock/pixel best-draw LPIPS as CONTEXT ONLY (visual flags are the verdict).
+  Tested on a synthetic flags file; dark bins show n/a until metrics.json is complete (~11:05).
+  No flags file received yet. Nothing launched, killed, deleted or uploaded.
 - 10:40 Sep 21 VISUAL CHECK of a "bad" primary output (F_row1_col3_5x5, fold 5, specimen F),
   prompted by the user. Diagnostic only; the manuscript side owns scoring.
   (a) Not a bad draw: all 5 gens ~15 dB, same failure (cell cluster placed right, red tissue
