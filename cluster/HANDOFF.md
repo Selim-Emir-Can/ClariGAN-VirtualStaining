@@ -52,6 +52,22 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 22:36-22:45 Sep 20 USER REVERSED THE BORROW: "cancel the jobs on the 3 idle GPUs". Killed
+  encoder f10 (GPU5), pixel f10 (GPU6), unet_l1 f10 (GPU8) ~1 h into training (~3 GPU-h lost),
+  re-added their exact lines to the TOP of queue.txt (ahead of the seed pass), restarted the runner
+  with GPUSET="1 3 4 7 9" (verified via /proc/<pid>/environ). GPU 8 was taken by another user
+  within seconds of freeing. Removed the killed runs' partial checkpoint dirs (31 GB) so the
+  fresh re-runs cannot pick a stale top_model via find_latest_ckpt.
+  **INCIDENT + LESSON (my mistake):** I killed each job's CHILDREN before its PARENT driver. The
+  BBDM driver caught the dying DataLoader worker as a training error, fell through to its eval
+  step and spawned `eval_fold.py` on GPUs 5 and 6 a few ms before my SIGTERM reached it; those
+  orphans (ppid=1) then evaluated 1-hour partial models and started writing bogus fold-10
+  deliverables. Caught at 22:39, SIGKILLed parent-first, and deleted what they wrote
+  (trainable_encoder and pixel_space samples/fold_10, 6.5 MB + 1.3 MB, and _runner_scratch).
+  No timing/seeds files had been written, so nothing reached the packer. Verified: GPUs 5/6 at
+  4 MiB, zero eval_fold processes, fold-10 dirs empty for both.
+  RULE for any future kill: SIGKILL the run_kfold.sh wrapper and the python driver FIRST, then
+  the workers — never children-first — and re-check for orphan eval_fold.py afterwards.
 - 21:36 Sep 20 user asked to borrow 3 idle GPUs to speed up. Added **5, 6, 8** (GPU 0 left
   alone as before) -> GPUSET="1 3 4 5 6 7 8 9". They immediately took encoder f10, **pixel f10**
   (the ~10.2 h gating job, now ends ~07:50 Mon instead of waiting for a slot) and unet_l1 f10.
