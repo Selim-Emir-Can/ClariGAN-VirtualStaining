@@ -52,6 +52,10 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 21:08 Sep 20 **claridi_primary COMPLETE, 11/11 folds.** Verified: 3765 PNGs = 753 tiles x 5
+  gens, 753/753 unique tile_ids across folds, timing_fold_k.csv for every fold, and all 11
+  top_model_epoch_*.pth checkpoints on disk (the model-release set). The headline experiment
+  is done; the remaining paper work is the last 1-3 folds of the other six.
 - 19:37 Sep 20 FOLD 8 COMPLETE across all seven experiments -> folds 0-8 fully scoreable (9/11).
   Fold 9 at 4/7 (waiting on pixel_space, cwgan, unet_l1); fold 10 just started (claridi 10
   launched 19:07). NOT re-uploaded yet: per the user's "fewer, bigger commits" rule the HF results
