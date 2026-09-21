@@ -166,6 +166,27 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 12:30 Sep 21 USER GO-AHEAD (verbatim intent): sync all results to HF now; after everything is
+  uploaded, delete all experiment model checkpoints from the cluster — NOT weights/ (the VQGAN
+  ckpts). IN PROGRESS, both detached (survive session close):
+  (a) RESULTS: `consolidate_parquet.py` built all 9 experiments (11 folds each) into
+      deliverables/parquet_merged/; `upload_results.py` is pushing ONE commit to
+      SelimEmirCan/claridi-results (2.25 GB). Log logs/final_results_sync.log, ends with
+      RESULTS_SYNC_OK or RESULTS_SYNC_FAILED.
+  (b) CHECKPOINTS: upload_checkpoints.py now has BBDM entries for claridi_primary_seed5678 and
+      _seed9012 (backup logs/upload_checkpoints.py.bak). `--folds 0-10` plan = 165 files,
+      193.7 GB; 66 already present (folds 0-5 paper set), 99 to upload = 116.6 GB in 9 commits
+      (BATCH=12). Log logs/upload_checkpoints_final.log, ends with ALL UPLOADS FINISHED.
+      ~7 MB/s while sharing bandwidth with (a) -> ~3-4 h.
+  (c) DELETION PLAN (runs only after `upload_checkpoints.py --folds 0-10 --verify` reports
+      165 match / 0 mismatch / 0 missing, and only files that verified): the 99 .pth files =
+      results/*/checkpoint/top_model_epoch_*.pth (66 files, 157.4 GB) and
+      baselines_out/*/checkpoints/*/latest_net_G.pth (33 files, 36.4 GB) = 193.8 GB.
+      KEEP: weights/ (epoch=000022.ckpt + stock VQGAN), every config.yaml, all deliverables,
+      results/*/{image,log}, k-fold_samples/ (not asked). No other .pth/.ckpt/.pt exist outside
+      those two trees (checked). If the session dies mid-way: check the two logs, re-run the
+      uploaders (idempotent), then --verify, then delete.
+  GPU log watcher NOT re-armed: no GPU work exists anymore (runner idle, queue empty).
 - 12:10 Sep 21 **ALL GPU WORK FOR THE CAMPAIGN IS DONE — 99/99 fold-jobs (77 paper + 22 seed).**
   seed-9012 fold 7 (126 tiles, 2.67 s/gen, top epoch 40), fold 9 (59 tiles, 2.48 s/gen, top epoch
   16 — the earliest selection in any pass; others 36-46), fold 10 (53 tiles, 2.51 s/gen, top epoch
