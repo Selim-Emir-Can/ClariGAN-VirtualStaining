@@ -52,6 +52,15 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 21:36 Sep 20 user asked to borrow 3 idle GPUs to speed up. Added **5, 6, 8** (GPU 0 left
+  alone as before) -> GPUSET="1 3 4 5 6 7 8 9". They immediately took encoder f10, **pixel f10**
+  (the ~10.2 h gating job, now ends ~07:50 Mon instead of waiting for a slot) and unet_l1 f10.
+  Every paper fold-job is now done or running; the next queue lines are the seed-5678 pass.
+  NO RETURN TIME was given this time — the user must say when to hand 5/6/8 back; when they
+  do, shrink GPUSET at least one job-length (~2.5-4 h; pixel is 10 h) before the deadline so
+  nothing overruns (see the 09:45 and 11:52 entries).
+  New ETA on 8 GPUs: paper folds complete ~08:00 Mon (gated by pixel f10); seed passes
+  (22 x 2.5 h) ~09:00-11:00 Mon. Was ~17:00-20:00 Mon on 5 GPUs.
 - 21:08 Sep 20 **claridi_primary COMPLETE, 11/11 folds.** Verified: 3765 PNGs = 753 tiles x 5
   gens, 753/753 unique tile_ids across folds, timing_fold_k.csv for every fold, and all 11
   top_model_epoch_*.pth checkpoints on disk (the model-release set). The headline experiment
