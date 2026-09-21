@@ -11,13 +11,12 @@
 - RESULTS SYNC DONE AND VERIFIED (12:50): SelimEmirCan/claridi-results (private dataset) holds
   all 9 experiments x 11 folds in the consolidated layout; `upload_results.py --verify` -> 37
   match / 0 mismatch / 0 missing / 0 stale. Nothing more to upload there.
-- CHECKPOINT ARCHIVE IN PROGRESS (user-authorised 12:30): `upload_checkpoints.py --folds 0-10`
-  detached, log logs/upload_checkpoints_final.log. Plan 165 files / 193.7 GB; 66 were already
-  present; 99 files / 116.6 GB uploading in 9 commits of 12 (~12.4 MB/s; started 12:12; commit 2
-  of 9 was finishing at 12:50). ETA ~14:50. Ends with the line "ALL UPLOADS FINISHED".
-- Disk: project ~201 GB (+~1 GB review/titled), /local 849 GB free. `/` is 100% full (not ours).
+- CHECKPOINT ARCHIVE DONE (14:42 Sep 21): 165/165 files verified on SelimEmirCan/claridi-checkpoints
+  (`--verify` 165 match / 0 mismatch / 0 missing). The 99 local .pth deleted 14:48, 193.7 GB freed.
+  HF is now the only copy of every checkpoint. weights/ untouched.
+- Disk: project 22 GB, /local 1020 GB free. `/` is 100% full (not ours).
 
-## 2. THE ONE PENDING TASK (user-authorised, do it without re-asking; every step is logged below)
+## 2. THE ONE PENDING TASK — DONE 14:48 Sep 21 (see the 14:55 log entry). Kept for the record:
 When logs/upload_checkpoints_final.log contains "ALL UPLOADS FINISHED":
   1. `python upload_checkpoints.py --folds 0-10 --verify`  (env: conda chatgarment,
      HF_HUB_CACHE=.cache/hf). Required: "165 match, 0 size mismatch, 0 missing".
@@ -81,8 +80,8 @@ upload_checkpoints.py (the pending upload). compute_metrics.py finished (review/
 ## 6. HF repos
 - SelimEmirCan/claridi-results (private dataset): complete, verified. Layout: <exp>/samples.parquet
   (all folds, filter on `fold`), config.yaml, timing.csv, seeds.json; ceilings/; root files; data_256/.
-- SelimEmirCan/claridi-checkpoints (public, gated=manual): folds 0-5 of 7 paper experiments verified;
-  folds 6-10 + both seed passes uploading (§1). Layout <exp>/fold_k/{top_model_epoch_*.pth,
+- SelimEmirCan/claridi-checkpoints (public, gated=manual): COMPLETE, 165 files / 193.7 GB verified
+  (9 experiments x 11 folds; the only copy since the 14:48 deletion). Layout <exp>/fold_k/{top_model_epoch_*.pth,
   config.yaml} or latest_net_G.pth.
 - USER'S END GOAL: everything archived on HF, then the project deleted from the cluster.
 
@@ -160,6 +159,22 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 14:55 Sep 21 **CHECKPOINT ARCHIVE COMPLETE, VERIFIED, AND THE 99 LOCAL CHECKPOINTS DELETED**
+  (the one task authorised at 12:30). upload_checkpoints.py --folds 0-10 finished 14:42: 9 commits,
+  116.5/116.5 GB, "ALL UPLOADS FINISHED", no Traceback/Error, ~12.4 MB/s throughout.
+  `--verify` at 14:45 -> **165 match, 0 size mismatch, 0 missing (of 165)**, exit 0.
+  DELETED 14:48 (only files whose remote size matched, list built from upload_checkpoints.plan):
+    results/*/checkpoint/top_model_epoch_*.pth       66 files, 157.4 GB
+    baselines_out/*/checkpoints/*/latest_net_G.pth   33 files,  36.4 GB
+  **Freed 193.7 GB.** /local 839 -> 1020 GB free; project 201 GB -> 22 GB.
+  KEPT and re-checked: weights/ (epoch=000022.ckpt 980 MB + stock VQGAN ckpt 980 MB + yaml),
+  all 66 config.yaml under results/, deliverables 6.6 GB, results/*/{image,log} 6.1 GB,
+  baselines_out 888 MB (results PNGs + logs), review/titled 994 MB, k-fold_samples 782 MB.
+  The only .pth/.pt left outside weights/ are library assets inside repo/ (lpips vgg.pth x2,
+  taming example_latent.pt). SelimEmirCan/claridi-checkpoints is now the ONLY copy of the
+  99 + 66 = 165 checkpoint files (193.7 GB) for all 9 experiments x 11 folds.
+  Nothing else deleted. Still present, NOT asked about: k-fold_samples/ 782 MB, results/*/{image,log}
+  6.1 GB, baselines_out/*/results 888 MB, review/titled 994 MB (derived, regenerable).
 - 13:05 Sep 21 NEW SESSION TOOK OVER (handoff block + log + RUN_NOTES read in full). State verified
   at 12:55: upload_checkpoints.py --folds 0-10 alive (pid 1258910), commit 3 of 9 in progress,
   28.7/116.5 GB committed at ~12.4 MB/s, no Traceback/Error in the log, ETA ~14:55. Picker alive
