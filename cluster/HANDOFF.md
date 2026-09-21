@@ -56,9 +56,8 @@ fold's training-set size.
   alone as before) -> GPUSET="1 3 4 5 6 7 8 9". They immediately took encoder f10, **pixel f10**
   (the ~10.2 h gating job, now ends ~07:50 Mon instead of waiting for a slot) and unet_l1 f10.
   Every paper fold-job is now done or running; the next queue lines are the seed-5678 pass.
-  NO RETURN TIME was given this time — the user must say when to hand 5/6/8 back; when they
-  do, shrink GPUSET at least one job-length (~2.5-4 h; pixel is 10 h) before the deadline so
-  nothing overruns (see the 09:45 and 11:52 entries).
+  21:45 user: KEEP GPUs 5/6/8 UNTIL ALL GPU JOBS ARE DONE — no hand-back needed for this
+  campaign. GPUSET stays "1 3 4 5 6 7 8 9" to the end (GPU 0 still untouched).
   New ETA on 8 GPUs: paper folds complete ~08:00 Mon (gated by pixel f10); seed passes
   (22 x 2.5 h) ~09:00-11:00 Mon. Was ~17:00-20:00 Mon on 5 GPUs.
 - 21:08 Sep 20 **claridi_primary COMPLETE, 11/11 folds.** Verified: 3765 PNGs = 753 tiles x 5
