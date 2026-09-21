@@ -160,6 +160,19 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 13:05 Sep 21 NEW SESSION TOOK OVER (handoff block + log + RUN_NOTES read in full). State verified
+  at 12:55: upload_checkpoints.py --folds 0-10 alive (pid 1258910), commit 3 of 9 in progress,
+  28.7/116.5 GB committed at ~12.4 MB/s, no Traceback/Error in the log, ETA ~14:55. Picker alive
+  (pid 3808976, HTTP 200). queue_runner/pack_loop/repair_loop idle. Zero emir GPU processes (other
+  users hold GPUs 1-9). claridi_flags.json unchanged (md5 c79ffe85..., the 5x5 pass). /local 839 GB
+  free. Git mirror identical to HANDOFF.md.
+  ARMED (this session only): (a) waiter on logs/upload_checkpoints_final.log (tr '\r' '\n';
+  ALL UPLOADS FINISHED | Traceback | Error, or the process disappearing); (b) waiter for a new
+  claridi_flags.json (md5 change) -> re-run review/crosstab_flags.py and report.
+  PREPARED, NOT RUN: deletion script (scratchpad, logic: upload_checkpoints.plan(range(11))
+  filtered to .pth, re-lists remote sizes, deletes only files whose remote size matches, refuses
+  unless exactly 99 clean; asserts no weights/ path). Dry run at 13:00: 54/99 .pth verified on the
+  remote so far, 45 not yet -> refused, as designed. Nothing launched, killed, deleted or uploaded.
 - 12:50 Sep 21 **RESULTS SYNC COMPLETE AND VERIFIED.** upload_results.py: one commit, +30 files
   -0, ALL RESULT UPLOADS FINISHED; `--verify` -> 37 match, 0 mismatch, 0 missing, 0 stale
   per-fold files. SelimEmirCan/claridi-results now holds all 9 experiments x 11 folds
