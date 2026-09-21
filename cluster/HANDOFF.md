@@ -1,113 +1,109 @@
-# >>> SESSION HANDOFF — written 2026-09-21 10:50 PDT by the outgoing Claude session. READ THIS FIRST. <<<
-(The long "Morning report" log below is the full history, newest entries first. This block is the
- consolidated current state so you do not have to reconstruct it.)
+# >>> SESSION HANDOFF — written 2026-09-21 12:55 PDT by the outgoing Claude session. READ THIS FIRST. <<<
+(The "Morning report" log below is the full history, newest entries first. This block is the
+ consolidated current state. It supersedes the 10:50 handoff block.)
 
-## 1. State right now (10:47 Sep 21)
-- ALL SEVEN PAPER EXPERIMENTS COMPLETE (77/77 fold-jobs): claridi_primary, claridi_stock_vqgan,
-  trainable_encoder, pixel_space, pix2pix, cwgan, unet_l1. `python collect_deliverables.py --check`
-  PASSES (753/753 tiles per experiment, each tile in exactly one fold, 5 gens diffusion / 1 gen
-  deterministic, ceilings 753/753). claridi_primary_seed5678 also complete and verified (11/11).
-- NO GPU WORK LEFT (12:10 Sep 21): claridi_primary_seed9012 complete 11/11 and verified; the
-  full `collect_deliverables.py --check` passes for all nine experiments (see the 12:10 entry).
-  queue.txt is EMPTY; the runner idles; other users have since taken GPUs 1-7 and 9.
-- Runner GPUSET is "0 1 2 3 4 5 6 7 8 9" (user: "use the idle gpus as needed", 08:04 Sep 21).
-  The busy-GPU test (fixed 23:45 Sep 20) treats a GPU as busy if ANY user has a process on it or
-  >2 GB is used, so it will not collide with other users. User austinchi grabs free GPUs
-  aggressively; expect them to appear again. GPU 0 is normally that user's.
-- Disk: project 241 GB (settles ~200 GB once the 4 running folds auto-prune their optimizer
-  state); /local has 840 GB free. `/` (home + /tmp) is 100% full with ~23 GB free — NOT ours
-  (other users' 200+ GB in /tmp); run_kfold.sh already exports TMPDIR into the project.
+## 1. State right now (12:55 Sep 21)
+- ALL GPU WORK IS DONE: 99/99 fold-jobs (7 paper experiments + 2 seed passes, LOSO-11).
+  `python collect_deliverables.py --check` PASSED at 12:07 (all 9 experiments 753/753 tiles,
+  0 unknown, 0 in two folds, 5 gens diffusion / 1 deterministic, ceilings 753/753, 6.09 GB).
+  queue.txt is empty; queue_runner.sh idles (pid 3270718). Zero emir processes on any GPU; other
+  users took GPUs 1-7 and 9 at ~12:10. NEVER launch or kill GPU jobs without the user's word.
+- RESULTS SYNC DONE AND VERIFIED (12:50): SelimEmirCan/claridi-results (private dataset) holds
+  all 9 experiments x 11 folds in the consolidated layout; `upload_results.py --verify` -> 37
+  match / 0 mismatch / 0 missing / 0 stale. Nothing more to upload there.
+- CHECKPOINT ARCHIVE IN PROGRESS (user-authorised 12:30): `upload_checkpoints.py --folds 0-10`
+  detached, log logs/upload_checkpoints_final.log. Plan 165 files / 193.7 GB; 66 were already
+  present; 99 files / 116.6 GB uploading in 9 commits of 12 (~12.4 MB/s; started 12:12; commit 2
+  of 9 was finishing at 12:50). ETA ~14:50. Ends with the line "ALL UPLOADS FINISHED".
+- Disk: project ~201 GB (+~1 GB review/titled), /local 849 GB free. `/` is 100% full (not ours).
 
-## 2. Detached processes that SURVIVE session close (the outgoing session's Monitors/wakeups do NOT)
-- `queue_runner.sh` (pgrep -f '^/bin/bash \./queue_runner\.sh$'; note the anchored pattern — an
-  unanchored pgrep -f matches its own shell). Idle once the 4 seed runs finish. Stop: touch queue_stop.
-- `pack_loop.sh` — LOCAL ONLY per-fold parquet packer (deliverables/parquet/<exp>/samples/fold_k.parquet);
-  never uploads. Stop: touch pack_stop.
-- `repair_loop.sh` — repairs GAN export seeds files; no longer needed (all GAN folds done) but
-  harmless. Stop: touch repair_stop.
-- `review/compute_metrics.py` — CPU, writing review/metrics.json (PSNR/SSIM/LPIPS per tile x model x
-  gen) incrementally; at 175/753 tiles at 10:47, ~15 more min. Optional overlay for the picker.
-- `python -m http.server 8897 --bind 127.0.0.1 --directory /local/emir/ClariDi` — serves the review
-  picker. User opens it via `ssh -L 8897:127.0.0.1:8897 emir@apollo` then
-  http://127.0.0.1:8897/review/index.html
-- RE-ARM YOUR OWN WATCHER: tail -F logs/q_*.log queue_done.txt for
-  'CalledProcessError|s/generation|GPU [0-9] <-|Killed|CUDA out of memory|RuntimeError|No space left'
-  (pipe through `stdbuf -oL tr '\r' '\n'` first; the training logs use carriage returns).
+## 2. THE ONE PENDING TASK (user-authorised, do it without re-asking; every step is logged below)
+When logs/upload_checkpoints_final.log contains "ALL UPLOADS FINISHED":
+  1. `python upload_checkpoints.py --folds 0-10 --verify`  (env: conda chatgarment,
+     HF_HUB_CACHE=.cache/hf). Required: "165 match, 0 size mismatch, 0 missing".
+     If anything is missing/mismatched: re-run `python upload_checkpoints.py --folds 0-10`
+     (idempotent, skips present files) and verify again. Do NOT delete until it is clean.
+  2. DELETE exactly the 99 archived checkpoint files (the user's instruction 12:30: "delete all
+     model checkpoints from this gpu cluster as a result of the experiments", NOT weights/):
+       results/*/checkpoint/top_model_epoch_*.pth          66 files, 157.4 GB
+       baselines_out/*/checkpoints/*/latest_net_G.pth     33 files,  36.4 GB
+     Delete only files whose remote size matched in step 1 (build the list from
+     upload_checkpoints.plan(range(11)) filtered to .pth). Report the freed size.
+     KEEP: weights/ (VQGAN ckpts), every config.yaml, deliverables/, results/*/{image,log},
+     k-fold_samples/, review/. No other .pth/.ckpt/.pt exist outside those two trees (checked).
+  3. Log it in the Morning report, mirror to repo/cluster/HANDOFF.md, commit (no push).
+If the upload died (log has Traceback / no process `ps -u emir -o args= | grep '[u]pload_checkpoints'`):
+re-run the same command with setsid nohup, then continue from step 1.
 
-## 3. Hugging Face (all uploads MANUAL, few big commits — HF limit is 128 commits/hour, hit once)
-- `SelimEmirCan/claridi-results` (PRIVATE dataset): consolidated layout — <exp>/samples.parquet (ALL
-  folds in one file, rows sorted fold/tile_id/gen_idx, ~1 row group per fold), <exp>/config.yaml,
-  timing.csv, seeds.json; ceilings/*.parquet; fold_assignments.*, manifest.csv, run_metadata.json,
-  data_256/. FINAL SYNC DONE 12:50 Sep 21: all 9 experiments x 11 folds, verified 37/37 match.
-  README on the repo was updated to the consolidated layout; parquets hold GENERATIONS ONLY —
-  GT/condition live once in data_256/train/{B,A}, join on tile_id via manifest.csv.
-- `SelimEmirCan/claridi-checkpoints` (PUBLIC, gated=manual, minimal card on purpose): folds 0-5 of
-  all 7 paper experiments verified (66/66 files, 77.2 GB). NOT archived yet: folds 6-10 of the 7
-  experiments and BOTH seed passes. `python upload_checkpoints.py --folds 6-10 --dry` then without
-  --dry (BATCH=12 -> ~6 commits), then `--verify`. TODO: the script's BBDM dict has no entries for
-  claridi_primary_seed5678/seed9012 (results dirs
-  results/ClariGAN_stratified_fold_{k}_specimen_grouped_seed{5678,9012}/LBBDM-f16/checkpoint) — add
-  them before archiving the seed passes.
-- USER'S END GOAL: archive everything to HF, then delete the whole project from the cluster.
-  Eventual archive ~187 GB. NOTHING IS DELETED WITHOUT THE USER'S EXPLICIT WORD. Folds 0-5
-  checkpoints (~74 GB) are verified remote and could go first when they say so.
+## 3. Visual review (the user's ongoing work; picker must stay served)
+- Picker: `python -m http.server 8897 --bind 127.0.0.1 --directory /local/emir/ClariDi` (pid
+  3808976; restart with that command via setsid nohup if it dies). User opens it via
+  `ssh -L 8897:127.0.0.1:8897 emir@apollo` -> http://127.0.0.1:8897/review/index.html
+- review/index.html: detail view shows ONLY the five titled plots per tile (Condition | Ground
+  Truth | Output, 768x256, built from the deliverable PNGs by review/make_titled_plots.py into
+  review/titled/<model>/fold_k/; primary done, 3765 plots, 993 MB). Hotkeys 1 good / 2 acceptable
+  / 3 bad / 4 completely incorrect grade the focused draw and auto-advance. Scale filter defaults
+  to 5x5; filters persist in localStorage; status line shows per-scale progress. Grades live in
+  the browser until "export flags" -> claridi_flags.json, which the user scp's to the project root.
+- 5x5 PASS DONE (12:00): 179 5x5 + 66 10x10 tiles graded, primary only. Archived
+  logs/claridi_flags_5x5pass_*.json; cross-tab logs/crosstab_flags_20260921_1159.txt (tool:
+  `python review/crosstab_flags.py claridi_flags.json`). Findings: 114/179 5x5 tiles systematic
+  (all 5 draws bad), heart specimens worst (F all 4s, B 100%), brain A/E/D fail, G/I/H mostly
+  fine; 243/245 tiles identical grade on all draws -> NOT a sampling problem; dark-background
+  hypothesis NOT supported (tissue-filled bright tiles grade worst); LPIPS tracks the grades,
+  PSNR does not. Ranked fixes proposed: scale-aware training > heart/specimen shift
+  (conditioning augmentation) > grade stock/pixel on the systematic tiles > background loss
+  (demoted) > sampling (dropped). NO new training without the user.
+- NEXT for the user: the 10x10 pass ("I think the 10x10 ones are better"). When a new
+  claridi_flags.json arrives, re-run the cross-tab and report; if they want stock VQGAN / pixel
+  titled plots: `python review/make_titled_plots.py claridi_stock_vqgan pixel_space` (~1 GB each).
+- Do NOT repeat the retracted PSNR claim that GAN baselines beat diffusion on hard specimens.
+  Visual quality is the verdict; metrics are context only.
 
-## 4. Standing rules from the user (do not relearn these the hard way)
-- No recurring/automatic uploads. Bulk, few commits, by hand.
-- Keep ONLY what regenerates the stains: BBDM = top_model_epoch_*.pth + config.yaml (driver
-  auto-prunes after eval); GAN = latest_net_G.pth only (`prune_gan_checkpoints.sh --yes`, done for
-  all 33 folds). Do not compress/fp16 checkpoints (measured: zstd -7.5%; fp16 overflows a
-  batch-norm running_var of 369090 -> inf).
-- Never delete samples without reporting their size first. Still-present and NOT deleted:
-  k-fold_samples/ (782 MB legacy wave-1, redundant), results/*/*/{image,log} (~6 GB training grids).
-- GPU etiquette: when handing GPUs back, shrink GPUSET at least one job-length BEFORE the deadline
-  (a timer alone lets the runner refill them). Never kill children before the parent driver — it
-  falls through to eval and spawns an orphan eval_fold.py (happened once; fixed by killing the
-  run_kfold.sh wrapper and python driver first, then checking `ps -u emir -o args= | grep eval_fold`).
-- Scope is locked: 9 experiments, LOSO-11 (pixel probe measured 112 GPU-h < 150 cap). Only the
-  primary has extra seeds.
+## 4. Detached processes (survive session close; this session's watchers do NOT)
+queue_runner.sh (idle) | pack_loop.sh (idle, all folds packed; stop: touch pack_stop) |
+repair_loop.sh (idle; stop: touch repair_stop) | http.server 8897 (picker) |
+upload_checkpoints.py (the pending upload). compute_metrics.py finished (review/metrics.json).
 
-## 5. What the user is doing next (the reason this session is ending)
-- VISUAL REVIEW, not metrics. The user's exact point: "metrics dont matter at this point visual
-  quality does." I had (wrongly) claimed from PSNR that GAN baselines beat diffusion on hard specimen
-  F; visually the baselines are far worse (blur/grid/near-black) and LPIPS agrees. That claim is
-  RETRACTED (see the 10:40 entry). Do not repeat it.
-- The picker (review/index.html) is ready: grid of one gen per tile, filters fold/specimen/tissue/
-  scale/model, click -> condition | GT | gen0 of all 9 models | the 5 draws of primary/stock/pixel;
-  flags good/ok/bad (+note) in localStorage, "export flags" -> claridi_flags.json.
-  11:20 Sep 21: per-draw grading strip added (hotkeys 1-4, titled condition|GT|gen panels); see log.
-- Agreed review plan: (1) one pass over primary gen0 fold by fold, flag bad/good with a note;
-  (2) for bad tiles open the 5 draws (1-2 good = sampling problem; all bad = conditioning/data);
-  (3) compare stock VQGAN and pixel_space on the same tiles (encoder implicated or not);
-  (4) user sends the exported flags JSON -> cross-tab by specimen/tissue/scale/gt_dark_frac ->
-  ranked fix candidates (sampling, conditioning augmentation, background-aware loss, data).
-  NO new training is launched without the user.
-- Findings to carry: specimen A is a real outlier (12.3 dB); F is 2nd worst and its failure is
-  systematic (all 5 draws hallucinate tissue over a dark background); trainable_encoder is far worse
-  than the primary on 10/11 folds (5-8 dB, hallucinated green cells) — plausibly the genuine
-  ablation result, but the manuscript side should eyeball it. Per-fold selected epochs are listed
-  in the 21:55 Sep 20 entry; epoch-50 weights are gone for all finished folds (not recoverable).
+## 5. Standing rules from the user
+- Nothing is deleted or uploaded without their explicit word (the checkpoint deletion in §2 IS
+  authorised). Uploads are bulk, few commits (HF limit 128 commits/hour).
+- Never kill or launch GPU jobs beyond the runner's own scheduling without their word.
+- Work only under /local/emir/ClariDi; conda env chatgarment; do not change scope or configs.
+- Keep only what regenerates the stains (after §2 that is: deliverables, configs, weights/).
+- Never delete samples without reporting size first. Still present, NOT asked about:
+  k-fold_samples/ (782 MB legacy), results/*/{image,log} (~6 GB), review/titled (993 MB derived).
+- Git: repo/ on branch specimen-grouped-cv; mirror HANDOFF.md to repo/cluster/HANDOFF.md and
+  commit after each change (-c user.name="Emir Can" -c user.email="emir2903@gmail.com",
+  `git add -f cluster/HANDOFF.md`). Do not push; the user pushes.
+- pgrep -f matches its own shell: use anchored patterns or `grep '[u]pload'` style.
 
-## 6. Scripts (all under /local/emir/ClariDi)
-run_kfold.sh (launcher; TMPDIR in project) | queue_runner.sh | prune_gan_checkpoints.sh [--yes] |
-pack_parquet.py (per-fold parquet + --ceilings/--static) | consolidate_parquet.py (one parquet per
-experiment -> deliverables/parquet_merged/) | upload_results.py [--dry|--verify] (ONE commit) |
-upload_checkpoints.py --folds a-b [--dry|--verify] (batched) | export_baseline_fold.py --all (GAN
-export repair) | collect_deliverables.py --check | review/compute_metrics.py | review/index.html.
-Git: repo/ on branch specimen-grouped-cv; HANDOFF.md is mirrored to repo/cluster/HANDOFF.md and
-committed after each change (identity: -c user.name="Emir Can" -c user.email="emir2903@gmail.com").
-Nothing has been pushed to GitHub by me; the user pushes.
+## 6. HF repos
+- SelimEmirCan/claridi-results (private dataset): complete, verified. Layout: <exp>/samples.parquet
+  (all folds, filter on `fold`), config.yaml, timing.csv, seeds.json; ceilings/; root files; data_256/.
+- SelimEmirCan/claridi-checkpoints (public, gated=manual): folds 0-5 of 7 paper experiments verified;
+  folds 6-10 + both seed passes uploading (§1). Layout <exp>/fold_k/{top_model_epoch_*.pth,
+  config.yaml} or latest_net_G.pth.
+- USER'S END GOAL: everything archived on HF, then the project deleted from the cluster.
 
 ## 7. Prompt to paste into the new session
-You are taking over an unattended training campaign on this cluster. Read
-/local/emir/ClariDi/HANDOFF.md in full (the SESSION HANDOFF block at the top, then the log), then
-RUN_NOTES.md. Work only under /local/emir/ClariDi; conda env chatgarment; do not change scope or
-configs; never kill or launch GPU jobs beyond the queue runner's own scheduling without my word;
-nothing is deleted or uploaded without my explicit go-ahead; uploads are bulk and few commits.
-Re-arm a log watcher. Confirm the last 4 seed-9012 folds finish and pass
-`python collect_deliverables.py --check`. Then keep the review picker serving (127.0.0.1:8897) and
-wait for my exported flags JSON to analyse. Keep the Morning report at the top of HANDOFF.md
-up to date and commit it.
+You are taking over an unattended campaign wrap-up on this cluster. Read
+/local/emir/ClariDi/HANDOFF.md in full (the SESSION HANDOFF block at the top first, then the
+log), then RUN_NOTES.md. Work only under /local/emir/ClariDi; conda env chatgarment; do not
+change scope or configs; never kill or launch GPU jobs without my word; nothing is deleted or
+uploaded without my explicit go-ahead EXCEPT the one task already authorised in HANDOFF.md
+section 2: when logs/upload_checkpoints_final.log says "ALL UPLOADS FINISHED", run
+`python upload_checkpoints.py --folds 0-10 --verify`, and only if it reports 165 match / 0
+mismatch / 0 missing, delete the 99 archived checkpoint files (results/*/checkpoint/
+top_model_epoch_*.pth and baselines_out/*/checkpoints/*/latest_net_G.pth), never weights/,
+and report the freed size. Arm a waiter on that log first (pipe through
+`stdbuf -oL tr '\r' '\n'`; watch for "ALL UPLOADS FINISHED", Traceback, Error). Keep the
+review picker serving on 127.0.0.1:8897. When I drop a new claridi_flags.json in the project
+root (the 10x10 pass), run `python review/crosstab_flags.py claridi_flags.json` and report the
+cross-tab by specimen, tissue, scale and dark-background fraction with ranked fix candidates;
+visual quality is what matters, not metrics; do not repeat the retracted PSNR claim about
+baselines beating diffusion. Keep the Morning report at the top of HANDOFF.md up to date and
+commit it to repo/cluster/HANDOFF.md after each change. Do not push to GitHub.
 # >>> END SESSION HANDOFF <<<
 
 # Morning report (maintained by the overnight Claude session, started 2026-09-18 20:47)
