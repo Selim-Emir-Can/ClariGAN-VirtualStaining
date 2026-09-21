@@ -181,7 +181,7 @@ fold's training-set size.
 - 11:20 Sep 21 PICKER UPGRADED at the user's request (review/index.html; backup logs/index.html.bak_*).
   Detail view now opens with a GRADING STRIP for the primary: five titled panels, one per draw,
   each = condition | ground truth | gen j (seed 1234+j) with the draw's LPIPS/PSNR as context.
-  Hotkeys 1 good / 2 acceptable / 3 poor / 4 fail grade the focused draw and auto-advance to the
+  Hotkeys 1 good / 2 acceptable / 3 bad / 4 completely incorrect (renamed 11:50 at the user's request) grade the focused draw and auto-advance to the
   next draw, then to the next tile; 0 clears; up/down move the focus; g/o/b whole-tile flags and
   the note still work. "grade" dropdown picks which model is graded (primary default; stock,
   pixel, seed5678, seed9012 available for review step 3). Grid cards show the 5 grades and are
