@@ -52,6 +52,13 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 02:19 Sep 21 **FOLDS 0-9 COMPLETE across all seven experiments (10/11 fully scoreable).**
+  Paper fold-jobs 73/77. Fold 10 has claridi_primary, stock and pix2pix done; encoder (GPU 9),
+  pixel (GPU 3, the long pole, ~11:15), cwgan (GPU 1) and unet_l1 (GPU 4) are running.
+  Seed pass: 2/22 done. After the 23:45 runner fix (busy = any user's process or >2 GB), the
+  other user released GPUs 0,2,5,6,8 at ~01:00 and GPU 3 at ~01:08; the runner reclaimed GPU 3
+  correctly (waited until it was genuinely empty) and we are back on our full set 1,3,4,7,9 with
+  none shared. Per the user's 22:36 reversal, the idle GPUs 0,2,5,6,8 were NOT re-borrowed.
 - 23:45 Sep 20 **REAL FAILURE, ROOT-CAUSED AND FIXED.** encoder f10 died of CUDA OOM on GPU 3
   ~1 min after launch: user austinchi's 33 GB process (pid 2658963) landed on GPU 3 at 23:44:36,
   9 s before our launch at 23:44:45. The driver then fell through to eval, found no checkpoint,
