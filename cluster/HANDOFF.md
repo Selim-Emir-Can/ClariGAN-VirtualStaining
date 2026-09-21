@@ -166,6 +166,33 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 12:10 Sep 21 **VISUAL REVIEW, 5x5 PASS DELIVERED BY THE USER** (claridi_flags.json, copied to
+  logs/claridi_flags_5x5pass_*.json; cross-tab in logs/crosstab_flags_20260921_1159.txt).
+  Primary, per-draw grades 1 good / 2 acceptable / 3 bad / 4 completely incorrect. Graded: all
+  179 5x5 tiles + 66 10x10 (all of specimen A, 13 of G). User's next step: grade the 10x10 crops
+  by hand ("I think the 10x10 ones are better").
+  FINDINGS (visual grades are the verdict; metrics only as context):
+  (1) 5x5 is largely a failure: 114/179 tiles systematic (all 5 draws >= 3), 394 of 895 draws
+      graded 4; only 65 tiles all-fine. Heart specimens worst: F 100% grade 4, B 100% systematic,
+      K 77%, C 79%, J 58%. Brain: A 100%, E 86%, D 80% systematic; G 22%, I 18%, H 43%.
+  (2) NOT a sampling problem: 243/245 tiles have the identical grade on all 5 draws, 1 tile mixed.
+      Best-of-5 / re-draw / selection would rescue ~1 tile. Drop sampling from the fix list.
+  (3) Dark-background hypothesis NOT supported by the grades: tiles with <10% dark background are
+      graded WORST (90% draws >= 3) and tiles with >90% dark are best (50%). Brighter conditions
+      grade worse (5x5 cond_mean >120: 70% systematic vs <60: 53%). So the failure is the
+      tissue texture itself being wrong, not background hallucination. Background-aware loss is
+      low priority.
+  (4) Scale: within specimen A, 5x5 = 3.94 mean (all 4s) vs 10x10 = 2.93 (all 3s, no 4s); G 5x5
+      2.04 vs 10x10 2.31. 5x5 tiles are only 24% of every training fold. Provisional until the
+      10x10 pass is done.
+  (5) Human grade tracks LPIPS monotonically (median 0.52/0.52/0.60/0.61 for grades 1-4) and
+      PSNR does not (grade 3 has LOWER PSNR than grade 4): LPIPS is the usable proxy, PSNR is not.
+  RANKED FIX CANDIDATES (proposed, nothing launched): 1. scale-aware training (5x5-specific model
+  or scale conditioning / 5x5 oversampling); 2. heart-domain / specimen shift (conditioning
+  augmentation: colour and intensity jitter on the condition; more heart specimens); 3. have the
+  user grade stock VQGAN and pixel_space on the 114 systematic 5x5 tiles to test whether the
+  encoder is implicated (best-draw LPIPS is >0.05 better than the primary on ~35% of them for
+  both, metric only); 4. background-aware loss demoted; 5. sampling/selection dropped.
 - 11:55 Sep 21 PICKER: review split by scale (user: 5x5 crops first, 10x10 later). The scale
   filter now defaults to 5x5 (179 tiles; 10x10 = 574) and all header selections persist in the
   browser (localStorage "claridi_filters"). Status line shows per-scale progress
