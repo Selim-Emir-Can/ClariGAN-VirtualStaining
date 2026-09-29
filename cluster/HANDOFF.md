@@ -42,6 +42,12 @@ Best-per-tile: label 93, B 80, A 68, primary 45, stock 5. A/B beat the label on 
 0.448) and lose on heart (0.490/0.486 vs 0.461) and on 5x5 (A 0.467 vs label 0.441). All five runs
 started fold 2 at 04:02-04:14 (~1.8 h/fold); fold 3 can still start ~06:00 and end ~07:50.
 
+### Folds 0-2 (06:15 Sep 29; LPIPS, context only) — analysis/lpips_folds012.txt
+461 tiles: stock 0.534 | primary 0.507 | label 0.470 | A 0.458 | B 0.479. Fold 2 moved A ahead
+(best on 174 tiles vs label 112, B 113, primary 55, stock 7). A leads on brain (0.443 vs label 0.470)
+and 10x10; the label still leads on heart (0.469 vs A 0.484). All runs in fold 3 since 05:58-06:11,
+ETA ~07:55-08:10; fold 4 will not start (09:00 deadline).
+
 ## 2. The split: data/splits/model_design_exp_split.csv (repo/BBDM/spatial_split.py)
 - Geometry (verified on pixels, corr ~1.00): each piece image is cut into two non-overlapping
   grids; a 5x5 crop = a 2x2 block of 10x10 crops (specimen D's "5x5" grid is really 6x6). Z is
