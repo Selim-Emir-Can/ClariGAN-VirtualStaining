@@ -36,6 +36,12 @@ tiles x 5 draws: stock 0.528 | primary 0.512 | specimen label 0.466 | A stained 
 B unstained 0.468. All three conditioned models ~0.045 better than the primary; best-per-tile
 counts: label 52, B 42, A 34, primary 21, stock 1. Specimen A: primary 0.698 vs A 0.345.
 
+### Folds 0+1 (04:16 Sep 29; LPIPS, context only) — analysis/lpips_folds01.txt
+291 tiles: stock 0.517 | primary 0.500 | label 0.453 | A 0.457 | B 0.462. Same ordering as fold 0.
+Best-per-tile: label 93, B 80, A 68, primary 45, stock 5. A/B beat the label on brain (0.438/0.448 vs
+0.448) and lose on heart (0.490/0.486 vs 0.461) and on 5x5 (A 0.467 vs label 0.441). All five runs
+started fold 2 at 04:02-04:14 (~1.8 h/fold); fold 3 can still start ~06:00 and end ~07:50.
+
 ## 2. The split: data/splits/model_design_exp_split.csv (repo/BBDM/spatial_split.py)
 - Geometry (verified on pixels, corr ~1.00): each piece image is cut into two non-overlapping
   grids; a 5x5 crop = a 2x2 block of 10x10 crops (specimen D's "5x5" grid is really 6x6). Z is
