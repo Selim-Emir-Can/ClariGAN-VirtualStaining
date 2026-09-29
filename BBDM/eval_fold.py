@@ -108,6 +108,8 @@ def main():
     if os.path.exists(cfg_src) and not os.path.exists(os.path.join(exp_dir, "config.yaml")):
         shutil.copyfile(cfg_src, os.path.join(exp_dir, "config.yaml"))
 
+    if cfg.model.BB.params.__contains__("ref_cond"):     # references come from this fold's TRAINING tiles only
+        net.build_ref_bank(fold["train"], split_file=a.split_file, manifest=a.manifest)
     rows, times = [], []
     t_fold = time.time()
     with torch.no_grad():
@@ -123,6 +125,8 @@ def main():
                 if device.type == "cuda": torch.cuda.synchronize(device)
                 t0 = time.time()
                 kw = {}
+                if cfg.model.BB.params.__contains__("ref_cond"):
+                    kw["ref_names"] = [r["tile_id"]]
                 if getattr(cfg.model.BB.params.UNetParams, "num_classes", None) is not None:
                     from specimen_labels import names_to_labels
                     kw["class_y"] = names_to_labels([r["tile_id"]], device=device)

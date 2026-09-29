@@ -470,6 +470,7 @@ class UNetModel(nn.Module):
         n_embed=None,                     # custom support for prediction of discrete ids into codebook of first stage vq model
         legacy=True,
         condition_key="concat",
+        ref_dim=None,                     # reference/context conditioning (ClariDi): pooled feature size
     ):
         super().__init__()
         if use_spatial_transformer:
@@ -517,6 +518,18 @@ class UNetModel(nn.Module):
 
         if self.num_classes is not None:
             self.label_emb = nn.Embedding(num_classes, time_embed_dim)
+
+        # Reference conditioning: pooled VQGAN-latent statistics of reference tiles -> MLP -> added to
+        # the timestep embedding. Last layer zero-initialised, so training starts as the plain model.
+        self.ref_dim = ref_dim
+        if ref_dim is not None:
+            self.ref_null = nn.Parameter(th.zeros(ref_dim))       # learned "no reference" input
+            self.ref_emb = nn.Sequential(
+                nn.LayerNorm(ref_dim),
+                linear(ref_dim, time_embed_dim),
+                nn.SiLU(),
+                zero_module(linear(time_embed_dim, time_embed_dim)),
+            )
 
         self.input_blocks = nn.ModuleList(
             [
@@ -718,7 +731,7 @@ class UNetModel(nn.Module):
         self.middle_block.apply(convert_module_to_f32)
         self.output_blocks.apply(convert_module_to_f32)
 
-    def forward(self, x, timesteps=None, context=None, y=None,**kwargs):
+    def forward(self, x, timesteps=None, context=None, y=None, ref=None, ref_drop=None, **kwargs):
         """
         Apply the model to an input batch.
         :param x: an [N x C x ...] Tensor of inputs.
@@ -737,6 +750,13 @@ class UNetModel(nn.Module):
         if self.num_classes is not None:
             assert y.shape == (x.shape[0],)
             emb = emb + self.label_emb(y)
+
+        if self.ref_dim is not None:
+            if ref is None:
+                ref = self.ref_null.expand(x.shape[0], -1)
+            elif ref_drop is not None:                       # per-sample null substitution
+                ref = th.where(ref_drop[:, None], self.ref_null.expand_as(ref), ref)
+            emb = emb + self.ref_emb(ref.type(emb.dtype))
 
         if self.condition_key != 'nocond':
             x = th.cat([x, context], dim=1)

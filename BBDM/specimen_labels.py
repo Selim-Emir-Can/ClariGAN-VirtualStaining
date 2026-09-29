@@ -11,8 +11,8 @@ import torch
 SPECIMENS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"]
 NULL_LABEL = len(SPECIMENS)            # 11
 NUM_CLASSES = len(SPECIMENS) + 1       # 12 = 11 specimens + null
-_ALIAS = {"Z": "D", "Hpart1": "H"}
-_PAT = re.compile(r"^(?:R\d+-)?([A-Za-z0-9]+?)_row\d+_col\d+")
+_ALIAS = {"Z": "D"}
+_PAT = re.compile(r"^(?:R\d+-)?(.+?)_row\d+_col\d+")
 
 
 def specimen_of(name):
@@ -20,7 +20,7 @@ def specimen_of(name):
     m = _PAT.match(stem)
     if not m:
         raise ValueError(f"cannot parse specimen from tile name {name!r}")
-    piece = m.group(1)
+    piece = re.sub(r"_?part\d+$", "", m.group(1))     # Z_part1 -> Z, Hpart1 -> H
     return _ALIAS.get(piece, piece)
 
 

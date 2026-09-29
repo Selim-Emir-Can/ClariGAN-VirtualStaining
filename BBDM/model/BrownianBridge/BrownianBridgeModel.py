@@ -41,12 +41,18 @@ class BrownianBridgeModel(nn.Module):
         # specimen class conditioning (off unless UNetParams.num_classes is set)
         self.num_classes = getattr(model_params.UNetParams, "num_classes", None)
         self.class_dropout = model_params.class_dropout if model_params.__contains__("class_dropout") else 0.0
+        self.ref_dim = getattr(model_params.UNetParams, "ref_dim", None)
 
-    def _label_kw(self, class_y, b, device):
+    def _label_kw(self, class_y, b, device, ref=None):
         """kwargs for the UNet: {} when unconditional; else y, with the null label (last index)
         substituted when no labels are given and, during training, with prob. class_dropout."""
+        kw = {}
+        if self.ref_dim is not None:
+            kw["ref"] = None if ref is None else ref.to(device)
+            if ref is not None and self.training and self.class_dropout > 0:
+                kw["ref_drop"] = torch.rand(b, device=device) < self.class_dropout
         if self.num_classes is None:
-            return {}
+            return kw
         null = self.num_classes - 1
         if class_y is None:
             class_y = torch.full((b,), null, device=device, dtype=torch.long)
@@ -54,7 +60,8 @@ class BrownianBridgeModel(nn.Module):
         if self.training and self.class_dropout > 0:
             drop = torch.rand(b, device=device) < self.class_dropout
             class_y = torch.where(drop, torch.full_like(class_y, null), class_y)
-        return {"y": class_y}
+        kw["y"] = class_y
+        return kw
 
     def register_schedule(self):
         T = self.num_timesteps
@@ -102,7 +109,7 @@ class BrownianBridgeModel(nn.Module):
     def get_parameters(self):
         return self.denoise_fn.parameters()
 
-    def forward(self, x, y, context=None, class_y=None):
+    def forward(self, x, y, context=None, class_y=None, ref=None):
         if self.condition_key == "nocond":
             context = None
         else:
@@ -110,9 +117,9 @@ class BrownianBridgeModel(nn.Module):
         b, c, h, w, device, img_size, = *x.shape, x.device, self.image_size
         assert h == img_size and w == img_size, f'height and width of image must be {img_size}'
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
-        return self.p_losses(x, y, context, t, class_y=class_y)
+        return self.p_losses(x, y, context, t, class_y=class_y, ref=ref)
 
-    def p_losses(self, x0, y, context, t, noise=None, class_y=None):
+    def p_losses(self, x0, y, context, t, noise=None, class_y=None, ref=None):
         """
         model loss
         :param x0: encoded x_ori, E(x_ori) = x0
@@ -126,7 +133,7 @@ class BrownianBridgeModel(nn.Module):
         noise = default(noise, lambda: torch.randn_like(x0))
 
         x_t, objective = self.q_sample(x0, y, t, noise)
-        objective_recon = self.denoise_fn(x_t, timesteps=t, context=context, **self._label_kw(class_y, b, x0.device))
+        objective_recon = self.denoise_fn(x_t, timesteps=t, context=context, **self._label_kw(class_y, b, x0.device, ref))
 
         per_sample_loss = None
 
@@ -197,9 +204,9 @@ class BrownianBridgeModel(nn.Module):
         return imgs
 
     @torch.no_grad()
-    def p_sample(self, x_t, y, context, i, clip_denoised=False, class_y=None):
+    def p_sample(self, x_t, y, context, i, clip_denoised=False, class_y=None, ref=None):
         b, *_, device = *x_t.shape, x_t.device
-        lk = self._label_kw(class_y, b, device)
+        lk = self._label_kw(class_y, b, device, ref)
         if self.steps[i] == 0:
             t = torch.full((x_t.shape[0],), self.steps[i], device=x_t.device, dtype=torch.long)
             objective_recon = self.denoise_fn(x_t, timesteps=t, context=context, **lk)
@@ -230,7 +237,7 @@ class BrownianBridgeModel(nn.Module):
             return x_tminus_mean + sigma_t * noise, x0_recon
 
     @torch.no_grad()
-    def p_sample_loop(self, y, context=None, clip_denoised=True, sample_mid_step=False, class_y=None):
+    def p_sample_loop(self, y, context=None, clip_denoised=True, sample_mid_step=False, class_y=None, ref=None):
         if self.condition_key == "nocond":
             context = None
         else:
@@ -239,16 +246,16 @@ class BrownianBridgeModel(nn.Module):
         if sample_mid_step:
             imgs, one_step_imgs = [y], []
             for i in tqdm(range(len(self.steps)), desc=f'sampling loop time step', total=len(self.steps)):
-                img, x0_recon = self.p_sample(x_t=imgs[-1], y=y, context=context, i=i, clip_denoised=clip_denoised, class_y=class_y)
+                img, x0_recon = self.p_sample(x_t=imgs[-1], y=y, context=context, i=i, clip_denoised=clip_denoised, class_y=class_y, ref=ref)
                 imgs.append(img)
                 one_step_imgs.append(x0_recon)
             return imgs, one_step_imgs
         else:
             img = y
             for i in tqdm(range(len(self.steps)), desc=f'sampling loop time step', total=len(self.steps)):
-                img, _ = self.p_sample(x_t=img, y=y, context=context, i=i, clip_denoised=clip_denoised, class_y=class_y)
+                img, _ = self.p_sample(x_t=img, y=y, context=context, i=i, clip_denoised=clip_denoised, class_y=class_y, ref=ref)
             return img
 
     @torch.no_grad()
-    def sample(self, y, context=None, clip_denoised=True, sample_mid_step=False, class_y=None):
-        return self.p_sample_loop(y, context, clip_denoised, sample_mid_step, class_y=class_y)
+    def sample(self, y, context=None, clip_denoised=True, sample_mid_step=False, class_y=None, ref=None):
+        return self.p_sample_loop(y, context, clip_denoised, sample_mid_step, class_y=class_y, ref=ref)

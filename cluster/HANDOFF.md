@@ -159,6 +159,19 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- 00:30 Sep 29 FIVE MODEL-DESIGN RUNS LAUNCHED on GPUs 1-5 (user: GPUs 1-5 free, stop by 09:00),
+  spatial split model_design_exp_split, via `run_until.sh` (one GPU per experiment, folds 0..4 in
+  order, a fold starts only if its estimated duration ends before DEADLINE=09:00; logs
+  logs_sp_<name>.log; results_spatial/, deliverables_spatial/):
+    GPU1 sp_stock_vqgan (vanilla L-BBDM, stock VQGAN) | GPU2 sp_primary (fine-tuned VQGAN)
+    GPU3 sp_specimen_cond (specimen label) | GPU4 sp_refA_stained | GPU5 sp_refB_unstained
+  VARIANTS A/B (user-chosen): per-tile channel mean+std of the frozen-VQGAN latent (512-d) from
+  training tiles of the same specimen -> LayerNorm-MLP (last layer zero-init) -> added to the
+  timestep embedding. A = stained targets as references, B = uncleared inputs. References never
+  come from the tile's own crop unit; k=8 random in training, all training tiles of the specimen
+  at eval; 10% dropout to a learned null. Configs Template-LBBDM-f16_ref{A_stained,B_unstained}.yaml.
+  Fix: specimen_labels parser missed "Z_part1" (first speccond launch died at step 0; relaunched
+  00:18). ~87 s/epoch, ~2 h/fold incl. eval -> expect ~4 folds per run by 09:00.
 - Sep 29 NEW EXPERIMENT SETUP (spatial split + specimen conditioning). Old LOSO outputs deleted
   Sep 28 after HF archive (results dataset: archive_loso/ tarballs, visual_review_loso/ grade
   JSONs); project now ~5.7 GB (data, weights, repo, scripts). Code on branch `spatial-split`.

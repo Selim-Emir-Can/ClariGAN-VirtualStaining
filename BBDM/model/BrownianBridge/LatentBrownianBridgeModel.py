@@ -54,12 +54,72 @@ class LatentBrownianBridgeModel(BrownianBridgeModel):
             self.cond_stage_model.apply(weights_init)
         return self
 
-    def forward(self, x, x_cond, context=None, class_y=None):
+    # ---------------- reference / context conditioning ----------------
+    # BB.params.ref_cond = {source: target|input, k: int}. The bank holds, for every TRAINING tile,
+    # the channel mean and std of its frozen-VQGAN latent (256 + 256 = 512 dims) computed from its
+    # stained target ("target", variant A) or its uncleared input ("input", variant B). A sample's
+    # reference vector is the mean feature of other training tiles of the same specimen, never from
+    # its own crop unit (a 5x5 crop and the 10x10 crops inside it), so a training tile cannot see
+    # its own ground truth. Training: k random references; eval: all of them (deterministic).
+    @torch.no_grad()
+    def build_ref_bank(self, pairs, split_file=None, manifest=None, batch=32):
+        import csv, os
+        from PIL import Image
+        import numpy as np
+        from specimen_labels import SPECIMENS, specimen_of
+        rc = self.model_config.BB.params.ref_cond
+        source, dev = rc.source, next(self.parameters()).device
+        unit_of = {}
+        if split_file:
+            unit = {r["tile_id"]: r["unit"] for r in csv.DictReader(open(split_file))}
+            man = manifest or os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(pairs[0][0]))), "manifest.csv")
+            for r in csv.DictReader(open(man)):
+                u = unit.get(r["tile_id"])
+                for k in (r["tile_id"], os.path.splitext(r["input_filename"])[0], os.path.splitext(r["target_filename"])[0]):
+                    unit_of[k] = u
+        stem = lambda p: os.path.splitext(os.path.basename(p))[0]
+        paths = [t if source == "target" else i for i, t in pairs]
+        feats = []
+        for b0 in range(0, len(paths), batch):
+            xs = [torch.from_numpy(np.asarray(Image.open(p).convert("RGB").resize((256, 256)), dtype=np.float32) / 127.5 - 1.0).permute(2, 0, 1)
+                  for p in paths[b0:b0 + batch]]
+            z = self.encode(torch.stack(xs).to(dev), cond=(source == "input"))
+            feats.append(torch.cat([z.mean((2, 3)), z.std((2, 3))], 1).float())
+        self._ref_feats = torch.cat(feats)                                              # [N, 512]
+        self._ref_spec = torch.tensor([SPECIMENS.index(specimen_of(stem(i))) for i, _ in pairs], device=dev)
+        self._ref_unit = [unit_of.get(stem(i), stem(i)) for i, _ in pairs]
+        self._unit_of = unit_of
+        print(f"reference bank ({source}): {len(pairs)} training tiles, feature {tuple(self._ref_feats.shape)}", flush=True)
+
+    def ref_features(self, names):
+        if getattr(self, "_ref_feats", None) is None:
+            raise RuntimeError("ref_cond is set but build_ref_bank() was not called")
+        import os
+        from specimen_labels import SPECIMENS, specimen_of
+        k = int(self.model_config.BB.params.ref_cond.k)
+        out = []
+        for n in names:
+            st = os.path.splitext(os.path.basename(str(n)))[0]
+            u = self._unit_of.get(st, st)
+            idx = [i for i in (self._ref_spec == SPECIMENS.index(specimen_of(st))).nonzero().flatten().tolist()
+                   if self._ref_unit[i] != u]
+            if self.training and len(idx) > k:
+                idx = [idx[j] for j in torch.randperm(len(idx))[:k].tolist()]
+            out.append(self._ref_feats[idx].mean(0))
+        return torch.stack(out)
+
+    def _ref(self, ref_names):
+        if ref_names is None or not self.model_config.BB.params.__contains__("ref_cond"):
+            return None
+        return self.ref_features(ref_names)
+
+    def forward(self, x, x_cond, context=None, class_y=None, ref_names=None):
         with torch.no_grad():
             x_latent = self.encode(x, cond=False)
             x_cond_latent = self.encode(x_cond, cond=True)
         context = self.get_cond_stage_context(x_cond)
-        return super().forward(x_latent.detach(), x_cond_latent.detach(), context, class_y=class_y)
+        return super().forward(x_latent.detach(), x_cond_latent.detach(), context, class_y=class_y,
+                               ref=self._ref(ref_names))
 
     def get_cond_stage_context(self, x_cond):
         if self.cond_stage_model is not None:
@@ -137,14 +197,15 @@ class LatentBrownianBridgeModel(BrownianBridgeModel):
     #     return out
     
     @torch.no_grad()
-    def sample(self, x_cond, clip_denoised=False, sample_mid_step=False, class_y=None):
+    def sample(self, x_cond, clip_denoised=False, sample_mid_step=False, class_y=None, ref_names=None):
         x_cond_latent = self.encode(x_cond, cond=True)
+        ref = self._ref(ref_names)
         if sample_mid_step:
             temp, one_step_temp = self.p_sample_loop(y=x_cond_latent,
                                                      context=self.get_cond_stage_context(x_cond),
                                                      clip_denoised=clip_denoised,
                                                      sample_mid_step=sample_mid_step,
-                                      class_y=class_y)
+                                      class_y=class_y, ref=ref)
             out_samples = []
             for i in tqdm(range(len(temp)), initial=0, desc="save output sample mid steps", dynamic_ncols=True,
                           smoothing=0.01):
@@ -165,7 +226,7 @@ class LatentBrownianBridgeModel(BrownianBridgeModel):
                                       context=self.get_cond_stage_context(x_cond),
                                       clip_denoised=clip_denoised,
                                       sample_mid_step=sample_mid_step,
-                                      class_y=class_y)
+                                      class_y=class_y, ref=ref)
             x_latent = temp
             out = self.decode(x_latent, cond=False)
             return out

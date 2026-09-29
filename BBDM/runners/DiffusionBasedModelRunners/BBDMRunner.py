@@ -176,10 +176,13 @@ class BBDMRunner(DiffusionBaseRunner):
 
     def _cls(self, names):
         """{'class_y': specimen labels} for a specimen-conditioned UNet, else {}."""
-        if getattr(self.config.model.BB.params.UNetParams, "num_classes", None) is None:
-            return {}
-        from specimen_labels import names_to_labels
-        return {"class_y": names_to_labels(names, device=self.config.training.device[0])}
+        kw = {}
+        if self.config.model.BB.params.__contains__("ref_cond"):
+            kw["ref_names"] = list(names)
+        if getattr(self.config.model.BB.params.UNetParams, "num_classes", None) is not None:
+            from specimen_labels import names_to_labels
+            kw["class_y"] = names_to_labels(names, device=self.config.training.device[0])
+        return kw
 
     def loss_fn(self, net, batch, epoch, step, opt_idx=0, stage='train', write=True):
         (x, x_name), (x_cond, x_cond_name) = batch

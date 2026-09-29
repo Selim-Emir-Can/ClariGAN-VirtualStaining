@@ -97,7 +97,7 @@ def build_config(a, save_name):
         config=a.config, seed=a.seed, result_path=a.results_root, train=not a.skip_train,
         sample_to_eval=False, sample_at_start=True, save_top=True,
         gpu_ids=a.gpu_ids, port=a.port, resume_model=None, resume_optim=None,
-        max_epoch=a.max_epoch, max_steps=a.max_steps)
+        max_epoch=a.max_epoch, max_steps=a.max_steps, split_file=a.split_file)
 
     cfg.data.dataset_config.dataset_path = a.data_root
     if a.vqgan_ckpt is not None and hasattr(cfg.model, "VQGAN"):
@@ -123,6 +123,11 @@ def build_config(a, save_name):
     return cfg
 
 
+def _maybe_build_ref_bank(runner, cfg, train_set):
+    if cfg.model.BB.params.__contains__("ref_cond"):
+        runner.net.build_ref_bank(train_set, split_file=getattr(cfg.args, "split_file", None))
+
+
 def launch(cfg, train_set, val_set, test_set):
     """Single-GPU in-process, or NCCL DDP spawn across the requested GPUs."""
     gpu_ids = cfg.args.gpu_ids
@@ -131,6 +136,7 @@ def launch(cfg, train_set, val_set, test_set):
         cfg.training.device = [torch.device("cpu")]
         bbdm_main.set_random_seed(cfg.args.seed)
         runner = get_runner(cfg.runner, cfg)
+        _maybe_build_ref_bank(runner, cfg, train_set)
         runner.train(train_set, val_set, test_set)
         return cfg
 
@@ -146,6 +152,7 @@ def launch(cfg, train_set, val_set, test_set):
         cfg.training.device = [torch.device(f"cuda:{gpu_list[0]}")]
         bbdm_main.set_random_seed(cfg.args.seed)
         runner = get_runner(cfg.runner, cfg)
+        _maybe_build_ref_bank(runner, cfg, train_set)
         runner.train(train_set, val_set, test_set)
     return cfg
 
