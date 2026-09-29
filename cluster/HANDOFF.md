@@ -30,6 +30,12 @@ once left an orphan eval).
   eval-only of fold 0 (--skip_train), then run_until.sh FOLDS="1 2 3 4" on GPU 1. The fold-0
   training log is kept at .cache/tmp/logs_sp_stock_fold0_train.log.
 
+### Fold-0 first read (02:35 Sep 29; LPIPS, CONTEXT ONLY — needs visual check)
+analysis/lpips_compare.py -> analysis/lpips_fold0.txt (+ per-tile json). Mean LPIPS over 150 test
+tiles x 5 draws: stock 0.528 | primary 0.512 | specimen label 0.466 | A stained 0.462 |
+B unstained 0.468. All three conditioned models ~0.045 better than the primary; best-per-tile
+counts: label 52, B 42, A 34, primary 21, stock 1. Specimen A: primary 0.698 vs A 0.345.
+
 ## 2. The split: data/splits/model_design_exp_split.csv (repo/BBDM/spatial_split.py)
 - Geometry (verified on pixels, corr ~1.00): each piece image is cut into two non-overlapping
   grids; a 5x5 crop = a 2x2 block of 10x10 crops (specimen D's "5x5" grid is really 6x6). Z is
