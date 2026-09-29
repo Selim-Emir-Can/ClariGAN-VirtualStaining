@@ -83,7 +83,7 @@ def main():
     class A: pass
     da = A(); da.config = a.config; da.vqgan_ckpt = a.vqgan_ckpt; da.results_root = os.path.join(a.out_root, "_runner_scratch")
     da.seed = a.seed; da.skip_train = True; da.gpu_ids = a.gpu; da.port = "0"; da.max_epoch = None; da.max_steps = None
-    da.accumulate_grad_batches = None; da.data_root = a.data_root
+    da.accumulate_grad_batches = None; da.data_root = a.data_root; da.split_file = a.split_file
     cfg = kfold_grouped.build_config(da, f"fold_{a.fold}_{a.tag}")
     cfg.args.train = False
     cfg.training.use_DDP = False

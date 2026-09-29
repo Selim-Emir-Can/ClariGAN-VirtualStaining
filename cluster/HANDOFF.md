@@ -23,6 +23,13 @@ Stop a run cleanly: kill its run_until.sh loop, then the run_kfold.sh wrapper an
 FIRST, then workers; afterwards check `ps -u emir -o args= | grep '[e]val_fold'` (a child-first kill
 once left an orphan eval).
 
+### Incidents
+- 01:38 Sep 29: sp_stock fold 0 trained fine (4933 s, top epoch 48) but its eval died:
+  eval_fold.py's config shim lacked the new split_file attribute (AttributeError). Fixed in
+  eval_fold.py at 01:39, before any other run reached eval. Recovery (.cache/tmp/stock_resume.sh):
+  eval-only of fold 0 (--skip_train), then run_until.sh FOLDS="1 2 3 4" on GPU 1. The fold-0
+  training log is kept at .cache/tmp/logs_sp_stock_fold0_train.log.
+
 ## 2. The split: data/splits/model_design_exp_split.csv (repo/BBDM/spatial_split.py)
 - Geometry (verified on pixels, corr ~1.00): each piece image is cut into two non-overlapping
   grids; a 5x5 crop = a 2x2 block of 10x10 crops (specimen D's "5x5" grid is really 6x6). Z is
