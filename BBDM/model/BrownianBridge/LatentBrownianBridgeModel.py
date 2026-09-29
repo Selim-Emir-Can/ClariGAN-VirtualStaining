@@ -54,12 +54,12 @@ class LatentBrownianBridgeModel(BrownianBridgeModel):
             self.cond_stage_model.apply(weights_init)
         return self
 
-    def forward(self, x, x_cond, context=None):
+    def forward(self, x, x_cond, context=None, class_y=None):
         with torch.no_grad():
             x_latent = self.encode(x, cond=False)
             x_cond_latent = self.encode(x_cond, cond=True)
         context = self.get_cond_stage_context(x_cond)
-        return super().forward(x_latent.detach(), x_cond_latent.detach(), context)
+        return super().forward(x_latent.detach(), x_cond_latent.detach(), context, class_y=class_y)
 
     def get_cond_stage_context(self, x_cond):
         if self.cond_stage_model is not None:
@@ -137,13 +137,14 @@ class LatentBrownianBridgeModel(BrownianBridgeModel):
     #     return out
     
     @torch.no_grad()
-    def sample(self, x_cond, clip_denoised=False, sample_mid_step=False):
+    def sample(self, x_cond, clip_denoised=False, sample_mid_step=False, class_y=None):
         x_cond_latent = self.encode(x_cond, cond=True)
         if sample_mid_step:
             temp, one_step_temp = self.p_sample_loop(y=x_cond_latent,
                                                      context=self.get_cond_stage_context(x_cond),
                                                      clip_denoised=clip_denoised,
-                                                     sample_mid_step=sample_mid_step)
+                                                     sample_mid_step=sample_mid_step,
+                                      class_y=class_y)
             out_samples = []
             for i in tqdm(range(len(temp)), initial=0, desc="save output sample mid steps", dynamic_ncols=True,
                           smoothing=0.01):
@@ -163,7 +164,8 @@ class LatentBrownianBridgeModel(BrownianBridgeModel):
             temp = self.p_sample_loop(y=x_cond_latent,
                                       context=self.get_cond_stage_context(x_cond),
                                       clip_denoised=clip_denoised,
-                                      sample_mid_step=sample_mid_step)
+                                      sample_mid_step=sample_mid_step,
+                                      class_y=class_y)
             x_latent = temp
             out = self.decode(x_latent, cond=False)
             return out

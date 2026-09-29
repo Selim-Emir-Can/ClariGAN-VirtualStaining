@@ -51,8 +51,9 @@ def parse_args():
                    help="where checkpoints/logs go; default <data_root>/../results")
     p.add_argument("--samples_root", default=None,
                    help="where per-fold test samples go; default <results_root>/../k-fold_samples")
-    p.add_argument("--scheme", choices=["loso", "grouped"], default="loso")
+    p.add_argument("--scheme", choices=["loso", "grouped", "spatial"], default="loso")
     p.add_argument("--n_folds", type=int, default=5, help="only used with --scheme grouped")
+    p.add_argument("--split_file", default=None, help="spatial split CSV (spatial_split.py), for --scheme spatial")
     p.add_argument("--folds", default=None,
                    help="comma-separated fold indices to run (default: all)")
     p.add_argument("--gpu_ids", default="0", help="e.g. 0 or 0,1,2 (cpu=-1)")
@@ -217,7 +218,7 @@ def main():
     manifest = a.manifest or os.path.join(a.data_root, "manifest.csv")
 
     records = load_manifest(manifest, a.data_root)
-    folds = make_folds(records, a.scheme, a.n_folds)
+    folds = make_folds(records, a.scheme, a.n_folds, a.split_file)
     rows = fold_table(folds, records)
 
     print(f"{len(records)} patches over {len({r['specimen'] for r in records})} specimens; "
@@ -225,8 +226,9 @@ def main():
     print(format_fold_table(rows))
     for f in folds:
         assert_no_leakage(f, records)
-    print(f"\nleakage assertion PASSED for all {len(folds)} folds "
-          f"(no specimen appears in more than one partition)")
+    print(f"\nleakage assertion PASSED for all {len(folds)} folds " +
+          ("(spatial: no file in two partitions; pixel-overlap check done by spatial_split.py)"
+           if a.scheme == "spatial" else "(no specimen appears in more than one partition)"))
 
     os.makedirs(a.results_root, exist_ok=True)
     save_fold_assignments(folds, records, a.results_root)
@@ -259,6 +261,7 @@ def main():
             cmd = [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "eval_fold.py"),
                    "--config", a.config, "--ckpt", ckpt, "--data_root", a.data_root,
                    "--scheme", a.scheme, "--n_folds", str(a.n_folds), "--fold", str(fold["fold"]),
+                   *(["--split_file", a.split_file] if a.split_file else []),
                    "--experiment", exp, "--out_root", deliv, "--gpu", first_gpu, "--seed", str(a.sample_seed),
                    "--n_gpus_train", str(max(1, len(a.gpu_ids.split(","))))]
             if a.vqgan_ckpt: cmd += ["--vqgan_ckpt", a.vqgan_ckpt]

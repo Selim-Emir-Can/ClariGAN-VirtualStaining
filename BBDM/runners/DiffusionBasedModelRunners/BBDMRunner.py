@@ -174,6 +174,13 @@ class BBDMRunner(DiffusionBaseRunner):
         self.logger(self.net.cond_latent_mean)
         self.logger(self.net.cond_latent_std)
 
+    def _cls(self, names):
+        """{'class_y': specimen labels} for a specimen-conditioned UNet, else {}."""
+        if getattr(self.config.model.BB.params.UNetParams, "num_classes", None) is None:
+            return {}
+        from specimen_labels import names_to_labels
+        return {"class_y": names_to_labels(names, device=self.config.training.device[0])}
+
     def loss_fn(self, net, batch, epoch, step, opt_idx=0, stage='train', write=True):
         (x, x_name), (x_cond, x_cond_name) = batch
         x = x.to(self.config.training.device[0])
@@ -214,7 +221,7 @@ class BBDMRunner(DiffusionBaseRunner):
         
         
 
-        loss, additional_info = net(x, x_cond)
+        loss, additional_info = net(x, x_cond, **self._cls(x_cond_name))
         """
         print(additional_info["x0"].shape, net.decode(additional_info["x0"]).shape)
         # Convert tensors to numpy for plotting
@@ -299,7 +306,7 @@ class BBDMRunner(DiffusionBaseRunner):
         #                  writer_tag=f'{stage}_one_step_sample' if stage != 'test' else None)
         #
         # sample = samples[-1]
-        sample = net.sample(x_cond, clip_denoised=self.config.testing.clip_denoised).to('cpu')
+        sample = net.sample(x_cond, clip_denoised=self.config.testing.clip_denoised, **self._cls(x_cond_name[0:batch_size])).to('cpu')
         image_grid = get_image_grid(sample, grid_size, to_normal=self.config.data.dataset_config.to_normal)
         im = Image.fromarray(image_grid)
         im.save(os.path.join(sample_path, 'skip_sample.png'))
@@ -340,7 +347,7 @@ class BBDMRunner(DiffusionBaseRunner):
             x_cond = x_cond.to(self.config.training.device[0])
 
             for j in range(sample_num):
-                sample = net.sample(x_cond, clip_denoised=False)
+                sample = net.sample(x_cond, clip_denoised=False, **self._cls(x_cond_name))
                 # sample = net.sample_vqgan(x)
                 for i in range(batch_size):
                     condition = x_cond[i].detach().clone()
@@ -398,7 +405,7 @@ class BBDMRunner(DiffusionBaseRunner):
             x_cond = x_cond.to(self.config.training.device[0])
 
             for j in range(sample_num):
-                sample = net.sample(x_cond, clip_denoised=False)
+                sample = net.sample(x_cond, clip_denoised=False, **self._cls(x_cond_name))
                 for i in range(batch_size):
                     condition = x_cond[i].detach().clone()
                     gt = x[i].detach().clone()  # Ensure ground truth is reset for each sample_num iteration
@@ -486,7 +493,7 @@ class BBDMRunner(DiffusionBaseRunner):
                     # print(x_cond[i].unsqueeze(0).shape)
                     # --- inference timing (report-only) ---
                     with _timer.record(name=x_name[i]):
-                        sample = net.sample(x_cond[i].unsqueeze(0), clip_denoised=False)
+                        sample = net.sample(x_cond[i].unsqueeze(0), clip_denoised=False, **self._cls([x_cond_name[i]]))
                     # --------------------------------------
                     result = sample[0]
 
@@ -641,7 +648,7 @@ class BBDMRunner(DiffusionBaseRunner):
     #             outputs = []
 
     #             for j in range(sample_num):
-    #                 sample = net.sample(x_cond[i].unsqueeze(0), clip_denoised=False)
+    #                 sample = net.sample(x_cond[i].unsqueeze(0), clip_denoised=False, **self._cls([x_cond_name[i]]))
     #                 result = sample[0]
 
     #                 # Save individual images

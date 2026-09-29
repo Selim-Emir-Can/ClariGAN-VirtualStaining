@@ -159,6 +159,21 @@ That is ~10 h earlier than the 21:10 estimate (Tue 00:59), because pixel_space m
 fold's training-set size.
 
 ## Launches / completions / failures
+- Sep 29 NEW EXPERIMENT SETUP (spatial split + specimen conditioning). Old LOSO outputs deleted
+  Sep 28 after HF archive (results dataset: archive_loso/ tarballs, visual_review_loso/ grade
+  JSONs); project now ~5.7 GB (data, weights, repo, scripts). Code on branch `spatial-split`.
+  SPLIT `data/splits/model_design_exp_split.csv` (BBDM/spatial_split.py): 5-fold spatially
+  blocked CV. Units = connected components of cross-scale pixel overlap (a 5x5 crop + the 10x10
+  crops inside it), ordered along each specimen-half's long axis into 5 bands; fold k test =
+  band k, val = neighbour band, train = rest. Every specimen in every partition; no pixels shared
+  across partitions (asserted). Test sizes 150/141/170/142/150. Driver: --scheme spatial
+  --split_file <csv>. User: 5 folds for model design, 11 folds at the end.
+  SPECIMEN CONDITIONING: UNetParams.num_classes=12 (11 specimens + null), label embedding added
+  to the timestep embedding (ADM label_emb); BB.params.class_dropout=0.1 -> null label, so the
+  model can also sample unconditionally. Labels parsed from tile names (Z->D, Hpart1->H) in
+  BBDM/specimen_labels.py; passed by BBDMRunner (_cls) and eval_fold.py. Config
+  configs/Template-LBBDM-f16_specimen_cond.yaml (primary + those two keys). CPU smoke test:
+  loss/backward OK, label changes outputs after 3 steps. NO GPU JOB LAUNCHED.
 - 14:55 Sep 21 **CHECKPOINT ARCHIVE COMPLETE, VERIFIED, AND THE 99 LOCAL CHECKPOINTS DELETED**
   (the one task authorised at 12:30). upload_checkpoints.py --folds 0-10 finished 14:42: 9 commits,
   116.5/116.5 GB, "ALL UPLOADS FINISHED", no Traceback/Error, ~12.4 MB/s throughout.

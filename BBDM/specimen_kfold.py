@@ -59,7 +59,29 @@ def _next_same_tissue(specimen, pool, by_tissue):
     return sorted(pool)[0]
 
 
-def make_folds(records, scheme="loso", n_folds=5):
+def make_spatial_folds(records, split_file):
+    """Folds from a spatial split CSV (spatial_split.py): every specimen appears in train, val
+    and test of every fold; band k is test, its neighbour band is val, the rest is train."""
+    from spatial_split import N_BANDS, val_band
+    band = {r["tile_id"]: int(r["band"]) for r in csv.DictReader(open(split_file))}
+    missing = [r["tile_id"] for r in records if r["tile_id"] not in band]
+    if missing:
+        raise ValueError(f"{len(missing)} manifest tiles missing from {split_file}, e.g. {missing[0]}")
+    folds = []
+    for k in range(N_BANDS):
+        part = lambda r: "test" if band[r["tile_id"]] == k else "val" if band[r["tile_id"]] == val_band(k) else "train"
+        fold = {"fold": k, "scheme": "spatial"}
+        for p in ("train", "val", "test"):
+            rs = [r for r in records if part(r) == p]
+            fold[p] = [(r["input_path"], r["target_path"]) for r in rs]
+            fold[f"{p}_specimens"] = sorted({r["specimen"] for r in rs})
+        files = [a for p in ("train", "val", "test") for a, _ in fold[p]]
+        assert len(files) == len(set(files)) == len(records), f"fold {k}: partition coverage broken"
+        folds.append(fold)
+    return folds
+
+
+def make_folds(records, scheme="loso", n_folds=5, split_file=None):
     """Return a list of folds. Each fold is a dict with
 
         fold, test_specimens, val_specimens, train_specimens  (lists of str)
@@ -72,6 +94,10 @@ def make_folds(records, scheme="loso", n_folds=5):
     (same tissue as the first test specimen, next in sorted order), never a slice
     of the test specimen.
     """
+    if scheme == "spatial":
+        if not split_file:
+            raise ValueError("--scheme spatial needs --split_file")
+        return make_spatial_folds(records, split_file)
     by_tissue = _specimens_by_tissue(records)
     all_specimens = sorted({r["specimen"] for r in records})
 
@@ -112,7 +138,14 @@ def make_folds(records, scheme="loso", n_folds=5):
 
 
 def assert_no_leakage(fold, records):
-    """Fail loudly if any specimen (or any file) appears in more than one partition."""
+    """Fail loudly if any specimen (or any file) appears in more than one partition.
+    Spatial folds: pixel-overlap and coverage checks are done by spatial_split.py; here only
+    file uniqueness and coverage are rechecked."""
+    if fold.get("scheme") == "spatial":
+        files = [p for name in ("train", "val", "test") for p, _ in fold[name]]
+        if len(files) != len(set(files)) or len(files) != len(records):
+            raise AssertionError(f"spatial fold {fold['fold']}: file duplication or coverage error")
+        return True
     parts = {"train": fold["train_specimens"], "val": fold["val_specimens"], "test": fold["test_specimens"]}
     for a in parts:
         for b in parts:

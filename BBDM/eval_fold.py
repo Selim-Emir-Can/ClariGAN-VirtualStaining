@@ -42,8 +42,9 @@ def parse_args():
     p.add_argument("--vqgan_ckpt", default=None)
     p.add_argument("--data_root", required=True, help="pre-resized 256px dataset (bbdm256)")
     p.add_argument("--manifest", default=None)
-    p.add_argument("--scheme", choices=["loso", "grouped"], default="loso")
+    p.add_argument("--scheme", choices=["loso", "grouped", "spatial"], default="loso")
     p.add_argument("--n_folds", type=int, default=5)
+    p.add_argument("--split_file", default=None, help="spatial split CSV, for --scheme spatial")
     p.add_argument("--fold", type=int, required=True)
     p.add_argument("--experiment", required=True, help="e.g. claridi_primary, claridi_stock_vqgan")
     p.add_argument("--out_root", required=True)
@@ -72,7 +73,7 @@ def main():
     torch.backends.cudnn.deterministic = True     # same flags as training (main.set_random_seed)
     torch.backends.cudnn.benchmark = False
     records = load_manifest(a.manifest or os.path.join(a.data_root, "manifest.csv"), a.data_root)
-    folds = make_folds(records, a.scheme, a.n_folds)
+    folds = make_folds(records, a.scheme, a.n_folds, a.split_file)
     fold = folds[a.fold]
     assert_no_leakage(fold, records)
     by_input_stem = {os.path.splitext(r["input_filename"])[0]: r for r in records}
@@ -121,7 +122,11 @@ def main():
                 torch.manual_seed(seed_j); torch.cuda.manual_seed_all(seed_j)
                 if device.type == "cuda": torch.cuda.synchronize(device)
                 t0 = time.time()
-                out = net.sample(x_cond, clip_denoised=clip)
+                kw = {}
+                if getattr(cfg.model.BB.params.UNetParams, "num_classes", None) is not None:
+                    from specimen_labels import names_to_labels
+                    kw["class_y"] = names_to_labels([r["tile_id"]], device=device)
+                out = net.sample(x_cond, clip_denoised=clip, **kw)
                 if device.type == "cuda": torch.cuda.synchronize(device)
                 dt = time.time() - t0
                 png = os.path.join(samp_dir, f"{r['tile_id']}_gen{j}.png")
