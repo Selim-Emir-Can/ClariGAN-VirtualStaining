@@ -2,7 +2,17 @@
 Rewritten 2026-09-29 00:35 PDT. Previous history (the leave-one-specimen-out campaign, Sep 18-28)
 is in git (`repo/cluster/HANDOFF.md` before commit on this date) and in the HF archive below.
 
-## 1. What is running (started 00:16-00:27 Sep 29, all detached with setsid nohup)
+## 0. STATUS 08:06 Sep 29 — OVERNIGHT RUNS FINISHED, GPUs 1-5 RELEASED
+All five experiments completed folds 0-3 (exit 0) and stopped before fold 4 by the 09:00 rule.
+Every fold has 5 draws x all test tiles (750/705/850/710 PNGs). No emir process on any GPU.
+results_spatial 47 GB (20 top checkpoints + configs), deliverables_spatial 1.5 GB.
+Folds 0-3 LPIPS (603 tiles; analysis/lpips_folds0123.txt; CONTEXT ONLY, needs the visual check):
+  stock 0.543 | primary 0.509 | label 0.471 | A stained 0.462 | B unstained 0.481
+  best-per-tile: A 225, label 156, B 138, primary 72, stock 12
+  A best on brain (0.448 vs label 0.471) and 10x10; label best on heart (0.473 vs A 0.487);
+  specimen A: primary 0.545 -> A 0.325. Fold 4 not run for any experiment.
+
+## 1. What ran (started 00:16-00:27 Sep 29, all detached with setsid nohup)
 Five experiments, one GPU each, folds 0..4 of the spatial split in order. `run_until.sh` starts a
 fold only if its estimated duration (first fold 8000 s, then the last measured fold) ends before
 DEADLINE=2026-09-29 09:00, so the GPUs free themselves around 09:00 (a fold may overrun slightly).
