@@ -12,6 +12,14 @@ Folds 0-3 LPIPS (603 tiles; analysis/lpips_folds0123.txt; CONTEXT ONLY, needs th
   A best on brain (0.448 vs label 0.471) and 10x10; label best on heart (0.473 vs A 0.487);
   specimen A: primary 0.545 -> A 0.325. Fold 4 not run for any experiment.
 
+### Review pages (02:15 Sep 30), served by http.server 8897 (pid 3808976) over the user's tunnel
+- review_spatial/titled.html — grader: per tile, 5 titled plots (Condition|GT|Output, draw 0) one per model,
+  blind by default; keys 1 good/2 acceptable/3 bad/4 completely incorrect; export -> sp_grades.json
+  {tile: {model: grade}}. Titled plots built by review_spatial/make_titled.py -> review_spatial/titled/ (170 MB).
+- review_spatial/index.html — side-by-side comparison + LPIPS summary; claridi_spatial_picker.html = same,
+  self-contained (60 MB, download and double-click). sheets/ = static PNG montages.
+- Fixed: manifest.csv has CRLF line endings; the pages' CSV parser now splits on \r?\n (GT was 'undefined').
+
 ## 1. What ran (started 00:16-00:27 Sep 29, all detached with setsid nohup)
 Five experiments, one GPU each, folds 0..4 of the spatial split in order. `run_until.sh` starts a
 fold only if its estimated duration (first fold 8000 s, then the last measured fold) ends before
