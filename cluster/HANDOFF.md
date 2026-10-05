@@ -13,6 +13,12 @@ Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md
    L-BBDM, navy dashed). No results/picks yet. Equations rendered with matplotlib mathtext (cm) as PNG assets.
    Manuscript issue flagged to the user: Fig. 2 panel letters (Brain: G-K, Heart: A-F) and its caption (brain A-F,
    heart G-K) both disagree with Fig. 5 and the manifest (brain A,D,E,G,H,I; heart B,C,F,J,K,L).
+   Website (Oct 5): LIVE, unlisted at https://selim-emir-can.github.io/ClariDi/ (public repo selim-emir-can.github.io,
+   commit 41a31f9; user accepted the exposure; not linked from homepage/sitemap; noindex). Pages: index, tiles,
+   wholesample, splits, slides. Source + build scripts: website_ClariDi/ (build_site.py, build_slides.py); repo clone:
+   website_clone/. To update: rebuild, rsync -a --delete --exclude 'build_*.py' --exclude 'tools/' website_ClariDi/
+   website_clone/ClariDi/, commit, push (TMPDIR on /local). Email draft for Michael given to the user.
+   Root fs / (incl /tmp) is 100% full (other users): keep temp files on /local; Bash output capture breaks when /tmp is full.
 3. Proposed, NOT started (user said "might be worth trying"): specimen-balanced sampling (new config,
    batches draw specimens evenly). Needs GPUs + the user's word.
 4. Offered, NOT started: nuclei-level evaluation (Cellpose/StarDist counts, density, detection F1 vs GT)
