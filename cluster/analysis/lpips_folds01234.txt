@@ -1,0 +1,30 @@
+
+mean LPIPS (lower = closer), by all; n = tiles
+   group    n     stock_vqgan         primary   specimen_cond    refA_stained  refB_unstained
+     all  753           0.532           0.508           0.464           0.457           0.473
+
+mean LPIPS (lower = closer), by scale; n = tiles
+   group    n     stock_vqgan         primary   specimen_cond    refA_stained  refB_unstained
+   10x10  574           0.538           0.511           0.465           0.456           0.474
+     5x5  179           0.512           0.498           0.461           0.462           0.468
+
+mean LPIPS (lower = closer), by tissue; n = tiles
+   group    n     stock_vqgan         primary   specimen_cond    refA_stained  refB_unstained
+   brain  483           0.529           0.503           0.462           0.443           0.465
+   heart  270           0.537           0.517           0.466           0.482           0.488
+
+mean LPIPS (lower = closer), by specimen; n = tiles
+   group    n     stock_vqgan         primary   specimen_cond    refA_stained  refB_unstained
+       A   79           0.561           0.542           0.400           0.340           0.417
+       B   55           0.576           0.530           0.468           0.450           0.472
+       C   53           0.521           0.474           0.469           0.468           0.473
+       D   50           0.505           0.449           0.447           0.428           0.449
+       E   64           0.542           0.546           0.483           0.469           0.472
+       F   50           0.545           0.502           0.472           0.480           0.479
+       G   96           0.549           0.521           0.515           0.483           0.502
+       H  126           0.551           0.513           0.505           0.493           0.502
+       I   68           0.427           0.415           0.373           0.404           0.403
+       J   59           0.512           0.533           0.462           0.504           0.522
+       K   53           0.536           0.540           0.462           0.507           0.490
+
+tiles where each model has the lowest mean LPIPS: {'sp_refB_unstained': 173, 'sp_refA_stained': 252, 'sp_primary': 97, 'sp_specimen_cond': 212, 'sp_stock_vqgan': 19}

@@ -2,28 +2,12 @@
 Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md) and the HF archive (§7).
 
 ## 0. NEXT SESSION: WHAT TO DO
-1. FOLD 4 RUNNING (no deadline yet; user will give a hand-back time). User priority: A, B, ours first.
-   19:12 run_fold4.sh launched; 19:20 re-prioritised: specimen_cond aborted 3 min in on GPU6 (partial dir
-   moved to results_spatial/ABORTED_ClariGAN_stratified_fold_4_sp_speccond_20261004, 13 GB, delete only
-   with the user's word; old log logs_sp_speccond_f4.aborted.log), run_fold4.sh parent + GPU3 subshell killed.
-   Now: GPU2 refA -> stock (run_fold4.sh subshell) | GPU3 refB -> specimen_cond (run_fold4_prio.sh waits
-   on refB's run_until pid 4126294) | GPU6 primary (run_fold4_prio.sh). A/B/ours ~21:15, rest ~23:30.
-   21:05 refB, 21:07 refA, 21:14 primary fold 4 DONE (exit 0, 750 outputs each) -> A, B, ours have all 5 folds.
-   stock (GPU2) started 21:07, specimen_cond (GPU3) 21:05; expected ~23:10. GPU6 is free (tell the user).
-   Interim fold-4 LPIPS (A/B/primary only): analysis/lpips_fold4_interim_ABprimary.txt (primary .503, A .437, B .440).
-   Done marker: FOLD4_PRIO_DONE in logs_fold4_prio_launcher.log (stock is tracked via its own log).
-   Original launch instructions (user assigned GPUs 2, 3, 6 on Oct 4):
-     cd /local/emir/ClariDi && setsid nohup ./run_fold4.sh > logs_fold4_launcher.log 2>&1 < /dev/null &
-   GPU2: refA then stock | GPU3: refB then primary | GPU6: specimen_cond. ~2 h per job incl. eval,
-   so ~4 h total. If the user gives a hand-back time, pass DEADLINE="YYYY-MM-DD HH:MM" (a job only
-   starts if its estimate ends before it). Before launching: `nvidia-smi` — GPUs 2, 3, 6 must be empty;
-   never touch other GPUs (other users hold 0, 1, 4, 5, 7, 8, 9).
-   Watch: logs_sp_<name>_f4.log for 'exit [0-9]* after|STOP before|RUN_UNTIL_DONE|CalledProcessError|
-   CUDA out of memory|AttributeError|FileNotFoundError' (pipe through `tr '\r' '\n'`; ignore the benign
-   'OSError: Directory not empty: .../pymp-*' finaliser tracebacks).
-2. When fold 4 is done for all five: every tile has been tested once. Recompute
-   `python analysis/lpips_compare.py 0 1 2 3 4` and `python analysis/color_stats.py` (edit its fold
-   assumption if needed), rebuild titled plots `python review_spatial/make_titled.py`, report.
+1. DONE Oct 4 23:00: fold 4 for all five (750 outputs each); all 753 tiles tested once. GPUs 2, 3, 6 idle
+   (user's assignment; ask before using). Final: analysis/lpips_folds01234.txt (+ lpips_folds_0_1_2_3_4.json),
+   analysis/color_stats.txt; titled plots rebuilt (fold 4 incl.); review pages + standalone picker now load
+   lpips_folds_0_1_2_3_4.json (fold-4 tiles visible). Launch details: run_fold4.sh / run_fold4_prio.sh, git history.
+2. Waiting on the user: picks/grades export; then slide deck for the postdoc (methods in LaTeX + 1-2 grids
+   per specimen from the user's picks). Do not start until told.
 3. Proposed, NOT started (user said "might be worth trying"): specimen-balanced sampling (new config,
    batches draw specimens evenly). Needs GPUs + the user's word.
 4. Offered, NOT started: nuclei-level evaluation (Cellpose/StarDist counts, density, detection F1 vs GT)
@@ -74,16 +58,15 @@ Cost: ~95 s/epoch x 50 epochs + ~35 min eval ≈ 1.9-2 h per fold.
   (reintroduces neighbouring-patch leakage). Pooled statistics carry colour more than texture;
   texture options: Gram-matrix (VGG) loss, or cross-attention to full reference latents.
 
-## 4. Results so far (folds 0-3, 603 test tiles). LPIPS is CONTEXT ONLY.
-analysis/lpips_folds0123.txt: mean LPIPS stock 0.543 | primary 0.509 | label 0.471 | A 0.462 |
-B 0.481; best-per-tile A 225, label 156, B 138, primary 72, stock 12. A best on brain/10x10;
-label best on heart. Specimen A (old worst case): primary 0.545 -> A 0.325.
-Colour (analysis/color_stats.txt, green share G/(R+G), all 5 draws): GT 0.39 | stock 0.30 |
-primary 0.36 | label 0.33 | A 0.42 | B 0.38. Specimens range 0.08 (I) to 0.61 (A); brain (64% of
-tiles) is green-rich, so models regress toward the dataset mean (green-poor I/J/K too green, A too
-red). The label corrects colour best; A overshoots green on dim/red specimens (its reference is the
-specimen-wide mean, dominated by bright tissue). Visual check of specimen A sheet: A recovers the
-green nuclear stain where the primary is dark red.
+## 4. Results, folds 0-4 (all 753 tiles). LPIPS is CONTEXT ONLY.
+analysis/lpips_folds01234.txt: mean LPIPS stock 0.532 | primary 0.508 | label 0.464 | A 0.457 | B 0.473;
+best-per-tile A 252, label 212, B 173, primary 97, stock 19. Brain: A best (0.443); heart: label best (0.466
+vs A 0.482). A best on A, B, D, E, G, H; label best on I, J, K (green-poor) and F. Specimen A: primary 0.542 -> A 0.340.
+Colour (analysis/color_stats.txt, green share G/(R+G), all 5 draws): GT 0.38 | stock 0.30 | primary 0.35 |
+label 0.33 | A 0.41 | B 0.38. Same pattern as folds 0-3: regression toward the dataset mean; label tracks
+per-specimen colour best on green-poor I/J/K; A overshoots green on dim/red specimens (H 0.37 vs 0.31,
+K 0.29 vs 0.21) and recovers green on A (0.58 vs GT 0.61; primary 0.46).
+Folds 0-3 numbers (previous): analysis/lpips_folds0123.txt.
 User's stance: visual quality is the verdict; PSNR/SSIM misleading; LPIPS unreliable per tile.
 Planned evaluation for the paper: blind human grading (primary) + nuclei-level agreement (objective)
 + LPIPS/FID as secondary context only.

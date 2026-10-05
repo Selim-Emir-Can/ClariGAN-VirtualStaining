@@ -60,7 +60,7 @@ function order(t){const o=EXPS.map(e=>e[0]);if(!$("#fBlind").checked)return o;le
 async function load(){
   const [man,split,lp]=await Promise.all([fetch("../data/bbdm256/manifest.csv").then(r=>r.text()),
     fetch("../data/splits/model_design_exp_split.csv").then(r=>r.text()),
-    fetch("../analysis/lpips_folds_0_1_2_3.json?"+Date.now()).then(r=>r.json())]);
+    fetch("../analysis/lpips_folds_0_1_2_3_4.json?"+Date.now()).then(r=>r.json())]);
   const band=Object.fromEntries(csv(split).map(r=>[r.tile_id,+r.band]));
   tiles=csv(man).filter(r=>lp[r.tile_id]).map(r=>({...r,fold:band[r.tile_id],lp:Object.fromEntries(EXPS.map(([e])=>[e,lp[r.tile_id][e]?mean(lp[r.tile_id][e]):null]))}));
   const fill=(id,vals)=>vals.forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;$(id).appendChild(o)});
