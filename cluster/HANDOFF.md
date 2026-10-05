@@ -46,6 +46,12 @@ Cost: ~95 s/epoch x 50 epochs + ~35 min eval ≈ 1.9-2 h per fold.
   Units ordered along each specimen half's long axis into 5 bands. Fold k: test = band k,
   val = neighbour band (k+1, or 3 for k=4), train = rest. Every specimen in every partition; no
   shared pixels across partitions (asserted). Test tiles per fold 150/141/170/142/150.
+- Split viewer (Oct 4): review_spatial/split_viz.html (make_split_viz.py -> split_viz/, 5.4 MB). Findings: geometry
+  verified (5x5 vs underlying 10x10 r>=0.9); D_p0 is one unit (19/21 tiles, all band 2 -> band 2 has 170 tiles);
+  equal tile count != equal area (bands differ up to 2.2x in area); bands thin (11 are one 5x5 crop wide);
+  test area within one 10x10 width of train: folds 0,4 ~20% vs folds 1-3 57-67% (val buffers end bands);
+  2D blocks barely help. Options for the user (not done): report near/far-from-train test tiles separately;
+  area-balanced bands; handle D_p0 6x6 crops.
 - Known limitation, to state in the paper: a test band touches a training band on one side (shared
   tile edge, no shared pixels). User accepted this; 5 folds for design, 11 for the final paper.
 - Driver flags: `--scheme spatial --split_file data/splits/model_design_exp_split.csv`.
