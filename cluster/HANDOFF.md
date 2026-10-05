@@ -88,7 +88,11 @@ pid 3808976; restart with setsid nohup if dead). User opens them via VS Code Por
   (blind checkbox shuffles/hides).
 - review_spatial/titled.html — per tile, titled plots (Condition|GT|Output, draw 0, from
   review_spatial/make_titled.py -> review_spatial/titled/); localStorage "sp_grades".
-- review_spatial/index.html — side-by-side + LPIPS summary; claridi_spatial_picker.html = standalone
+- review_spatial/index.html ("the picker") — side-by-side + LPIPS summary; picks in localStorage "sp_picks",
+  export -> sp_picks.json. Oct 4: added 'next specimen' button + n / Shift+N (sets the specimen filter to the
+  next/previous letter; stat shows picks for that letter). User is picking a few tiles per specimen for a
+  postdoc slide deck (methods in LaTeX equations + 1-2 grids per specimen from their picks). DO NOT start the
+  slides until the user says so; claridi_spatial_picker.html = standalone
   60 MB copy; sheets/ = PNG montages.
 - The user graded some tiles but has NOT exported yet: grades live in their browser for the exact
   origin (localhost:<port>); remind them to export and copy the JSON to the project root.

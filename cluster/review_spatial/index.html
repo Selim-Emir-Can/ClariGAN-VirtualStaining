@@ -1,0 +1,126 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>ClariDi spatial comparison</title>
+<style>
+ :root{--bg:#111;--fg:#ddd;--mut:#888;--acc:#4da3ff;--card:#1b1b1b;--best:#3c3}
+ body{margin:0;background:var(--bg);color:var(--fg);font:13px system-ui,sans-serif}
+ header{position:sticky;top:0;background:#000;padding:8px 12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #333;z-index:5}
+ header label{display:flex;gap:4px;align-items:center;color:var(--mut)}
+ select,button,input{background:#222;color:var(--fg);border:1px solid #444;border-radius:4px;padding:3px 6px;font:inherit}
+ button{cursor:pointer} #stat{margin-left:auto;color:var(--mut)}
+ #summary{padding:10px 12px;overflow-x:auto} table{border-collapse:collapse;font-variant-numeric:tabular-nums}
+ td,th{padding:3px 10px;border-bottom:1px solid #2a2a2a;text-align:right} th{color:var(--mut);font-weight:500}
+ td:first-child,th:first-child{text-align:left} td.best{color:var(--best);font-weight:600}
+ details summary{cursor:pointer;color:var(--acc);margin:6px 0}
+ .row{display:flex;gap:6px;align-items:flex-start;padding:8px 12px;border-bottom:1px solid #222}
+ .meta{width:150px;flex:none;color:var(--mut);font-size:12px;line-height:1.5}
+ .meta b{color:var(--fg)} .imgs{display:flex;gap:6px;flex-wrap:wrap}
+ figure{margin:0;width:var(--sz);position:relative} figure img{width:var(--sz);height:var(--sz);display:block;background:#000;border:2px solid transparent;border-radius:3px}
+ figure.pick img{cursor:pointer} figure.pick:hover img{border-color:#555} figure.chosen img{border-color:var(--best)}
+ figcaption{font-size:11px;color:var(--mut);padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ figcaption .l{color:var(--fg)} figcaption .lb{color:var(--best);font-weight:600}
+ #pager{padding:10px 12px;display:flex;gap:8px;align-items:center}
+ kbd{background:#333;border-radius:3px;padding:0 4px;font-size:11px}
+</style></head><body>
+<header>
+ <label>fold <select id="fFold"><option value="">all</option></select></label>
+ <label>specimen <select id="fSpec"><option value="">all</option></select></label>
+ <label>tissue <select id="fTis"><option value="">all</option><option>brain</option><option>heart</option></select></label>
+ <label>scale <select id="fSc"><option value="">all</option><option>5x5</option><option>10x10</option></select></label>
+ <label>draw <select id="fGen"><option value="0">gen 0</option><option value="1">gen 1</option><option value="2">gen 2</option><option value="3">gen 3</option><option value="4">gen 4</option></select></label>
+ <label>sort <select id="fSort">
+   <option value="tile">fold, tile id</option>
+   <option value="gainA">A's LPIPS gain over our L-BBDM (largest first)</option>
+   <option value="lossA">A worse than our L-BBDM (largest first)</option>
+   <option value="primWorst">our L-BBDM worst first</option>
+   <option value="spread">largest spread between models</option></select></label>
+ <label>size <select id="fSz"><option value="160">S</option><option value="224" selected>M</option><option value="300">L</option></select></label>
+ <label><input type="checkbox" id="fBlind"> blind (shuffle, hide names)</label>
+ <label><input type="checkbox" id="fLp" checked> show LPIPS</label>
+ <button id="nextSpec" title="skip the rest of this specimen (n; Shift+N = previous)">next specimen &#8677;</button>
+ <button id="exportBtn">export picks</button>
+ <span id="stat"></span>
+</header>
+<div id="summary"></div>
+<div id="rows"></div>
+<div id="pager"><button id="prev">&larr; prev</button><span id="pinfo"></span><button id="next">next &rarr;</button></div>
+<p style="color:#666;padding:4px 12px 20px">Click the output that looks best to record a pick for that tile (stored in this browser; <em>export picks</em> saves JSON).
+Blind mode shuffles the five outputs per tile and hides names, for an unbiased preference pass. LPIPS (alex, mean over the 5 draws) is context only.
+Keys: <kbd>&larr;</kbd>/<kbd>&rarr;</kbd> page, <kbd>n</kbd> / <kbd>Shift+N</kbd> next / previous specimen (skips the rest of the current letter), <kbd>1</kbd>-<kbd>5</kbd> pick in the row under the mouse.</p>
+<script>
+const EXPS=[["sp_stock_vqgan","vanilla L-BBDM (stock VQGAN)"],["sp_primary","our L-BBDM"],["sp_specimen_cond","+ specimen label"],["sp_refA_stained","+ A stained refs"],["sp_refB_unstained","+ B unstained ctx"]];
+const NAME=Object.fromEntries(EXPS), PER=25;
+const $=s=>document.querySelector(s);
+let tiles=[],view=[],page=0,hoverTile=null;
+let picks={}; try{picks=JSON.parse(localStorage.getItem("sp_picks")||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem("sp_picks",JSON.stringify(picks))}catch(e){}};
+const csv=t=>{const r=t.trim().split(/\r?\n/).map(l=>l.split(","));return r.slice(1).map(x=>Object.fromEntries(r[0].map((k,i)=>[k,x[i]])))};
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+function hash(s){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return h}
+function order(t){const o=EXPS.map(e=>e[0]);if(!$("#fBlind").checked)return o;let h=hash(t.tile_id);return o.map(e=>[((h=(h*1103515245+12345)|0)>>>0),e]).sort((a,b)=>a[0]-b[0]).map(x=>x[1])}
+async function load(){
+  const [man,split,lp]=await Promise.all([fetch("../data/bbdm256/manifest.csv").then(r=>r.text()),
+    fetch("../data/splits/model_design_exp_split.csv").then(r=>r.text()),
+    fetch("../analysis/lpips_folds_0_1_2_3.json?"+Date.now()).then(r=>r.json())]);
+  const band=Object.fromEntries(csv(split).map(r=>[r.tile_id,+r.band]));
+  tiles=csv(man).filter(r=>lp[r.tile_id]).map(r=>({...r,fold:band[r.tile_id],lp:Object.fromEntries(EXPS.map(([e])=>[e,lp[r.tile_id][e]?mean(lp[r.tile_id][e]):null]))}));
+  const fill=(id,vals)=>vals.forEach(v=>{const o=document.createElement("option");o.value=o.textContent=v;$(id).appendChild(o)});
+  fill("#fFold",[...new Set(tiles.map(t=>t.fold))].sort());fill("#fSpec",[...new Set(tiles.map(t=>t.specimen))].sort());
+  summary();render();
+}
+function summary(){
+  const groups=[["all",()=>true],["brain",t=>t.tissue=="brain"],["heart",t=>t.tissue=="heart"],["10x10",t=>t.scale=="10x10"],["5x5",t=>t.scale=="5x5"]];
+  const specs=[...new Set(tiles.map(t=>t.specimen))].sort().map(s=>["specimen "+s,t=>t.specimen==s]);
+  const rowsOf=gs=>gs.map(([g,f])=>{const ts=tiles.filter(f);const m=EXPS.map(([e])=>mean(ts.map(t=>t.lp[e])));const b=Math.min(...m);
+      return `<tr><td>${g}</td><td>${ts.length}</td>${m.map(v=>`<td class="${v==b?"best":""}">${v.toFixed(3)}</td>`).join("")}</tr>`}).join("");
+  const wins=Object.fromEntries(EXPS.map(([e])=>[e,0]));tiles.forEach(t=>{wins[EXPS.map(x=>x[0]).reduce((a,b)=>t.lp[b]<t.lp[a]?b:a)]++});
+  const head=`<tr><th>group</th><th>tiles</th>${EXPS.map(e=>`<th>${e[1]}</th>`).join("")}</tr>`;
+  $("#summary").innerHTML=`<b>Mean LPIPS over folds ${[...new Set(tiles.map(t=>t.fold))].sort().join(", ")} (lower = closer to ground truth; best in green)</b>
+   <table>${head}${rowsOf(groups)}<tr><td>tiles won</td><td>${tiles.length}</td>${EXPS.map(([e])=>`<td>${wins[e]}</td>`).join("")}</tr></table>
+   <details><summary>by specimen</summary><table>${head}${rowsOf(specs)}</table></details>`;
+}
+function render(){
+  const f=$("#fFold").value,s=$("#fSpec").value,ti=$("#fTis").value,sc=$("#fSc").value,so=$("#fSort").value;
+  view=tiles.filter(t=>(f===""||t.fold==f)&&(!s||t.specimen==s)&&(!ti||t.tissue==ti)&&(!sc||t.scale==sc));
+  const k={tile:t=>t.fold*1e4+t.tile_id.localeCompare?0:0};
+  const key={gainA:t=>t.lp.sp_primary-t.lp.sp_refA_stained,lossA:t=>t.lp.sp_refA_stained-t.lp.sp_primary,primWorst:t=>t.lp.sp_primary,
+             spread:t=>Math.max(...EXPS.map(([e])=>t.lp[e]))-Math.min(...EXPS.map(([e])=>t.lp[e]))}[so];
+  view.sort(key?(a,b)=>key(b)-key(a):(a,b)=>a.fold-b.fold||a.tile_id.localeCompare(b.tile_id));
+  page=Math.min(page,Math.max(0,Math.ceil(view.length/PER)-1));draw();
+}
+function draw(){
+  const g=$("#fGen").value,blind=$("#fBlind").checked,showLp=$("#fLp").checked;
+  document.documentElement.style.setProperty("--sz",$("#fSz").value+"px");
+  const box=$("#rows");box.innerHTML="";
+  view.slice(page*PER,(page+1)*PER).forEach(t=>{
+    const r=document.createElement("div");r.className="row";r.onmouseenter=()=>hoverTile=t;
+    const best=EXPS.map(x=>x[0]).reduce((a,b)=>t.lp[b]<t.lp[a]?b:a);
+    const figs=[`<figure><img loading="lazy" src="../data/bbdm256/train/A/${t.input_filename}"><figcaption>condition (uncleared)</figcaption></figure>`,
+                `<figure><img loading="lazy" src="../data/bbdm256/train/B/${t.target_filename}"><figcaption>ground truth (cleared)</figcaption></figure>`];
+    order(t).forEach((e,i)=>{const nm=blind?`output ${i+1}`:NAME[e];const lp=showLp&&!blind?` · <span class="${e==best?"lb":"l"}">${t.lp[e].toFixed(3)}</span>`:"";
+      figs.push(`<figure class="pick ${picks[t.tile_id]==e?"chosen":""}" data-e="${e}"><img loading="lazy" src="../deliverables_spatial/${e}/samples/fold_${t.fold}/${t.tile_id}_gen${g}.png"><figcaption>${i+1}. ${nm}${lp}</figcaption></figure>`)});
+    r.innerHTML=`<div class="meta"><b>${t.tile_id}</b><br>fold ${t.fold} · specimen ${t.specimen}<br>${t.tissue} · ${t.scale}${t.masked=="True"?" · masked":""}${picks[t.tile_id]&&!blind?`<br>pick: ${NAME[picks[t.tile_id]]}`:picks[t.tile_id]?"<br>picked":""}</div><div class="imgs">${figs.join("")}</div>`;
+    r.querySelectorAll("figure.pick").forEach(fg=>fg.onclick=()=>{pick(t,fg.dataset.e)});
+    box.appendChild(r)});
+  const n=Object.keys(picks).length;
+  $("#pinfo").textContent=`page ${page+1} / ${Math.max(1,Math.ceil(view.length/PER))}`;
+  const sp=$("#fSpec").value,ns=sp?tiles.filter(t=>t.specimen==sp&&picks[t.tile_id]).length:0;
+  $("#stat").textContent=`${sp?"specimen "+sp+": "+ns+" picks · ":""}${view.length} of ${tiles.length} tiles · ${n} picks`;
+}
+function pick(t,e){picks[t.tile_id]=picks[t.tile_id]==e?undefined:e;if(!picks[t.tile_id])delete picks[t.tile_id];save();draw()}
+$("#prev").onclick=()=>{if(page>0){page--;draw();scrollTo(0,$("#rows").offsetTop-60)}};
+$("#next").onclick=()=>{if((page+1)*PER<view.length){page++;draw();scrollTo(0,$("#rows").offsetTop-60)}};
+document.onkeydown=e=>{if(e.target.tagName=="INPUT"&&e.target.type!="checkbox"||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.key=="n")jumpSpec(1);if(e.key=="N")jumpSpec(-1);if(e.key=="ArrowLeft")$("#prev").click();if(e.key=="ArrowRight")$("#next").click();
+  if("12345".includes(e.key)&&e.key&&hoverTile){pick(hoverTile,order(hoverTile)[+e.key-1])}};
+function jumpSpec(d){
+  const specs=[...new Set(tiles.map(t=>t.specimen))].sort();
+  const cur=$("#fSpec").value||(hoverTile||view[page*PER]||{}).specimen;
+  const i=specs.indexOf(cur), j=i<0?(d>0?0:specs.length-1):i+d;
+  if(j<0||j>=specs.length)return;
+  $("#fSpec").value=specs[j];page=0;hoverTile=null;render();scrollTo(0,$("#rows").offsetTop-60)}
+$("#nextSpec").onclick=()=>jumpSpec(1);
+$("#exportBtn").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(picks,null,1)],{type:"application/json"}));a.download="sp_picks.json";a.click()};
+["fFold","fSpec","fTis","fSc","fSort"].forEach(id=>$("#"+id).onchange=()=>{page=0;render()});
+["fGen","fSz","fBlind","fLp"].forEach(id=>$("#"+id).onchange=draw);
+load();
+</script></body></html>
