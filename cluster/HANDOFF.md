@@ -2,8 +2,13 @@
 Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md) and the HF archive (§7).
 
 ## 0. NEXT SESSION: WHAT TO DO
-1. FOLD 4 LAUNCHED 2026-10-04 19:12 PDT (no deadline; user will give a hand-back time later).
-   If a deadline arrives: running jobs finish; to stop queued stock/primary, kill per §6 order.
+1. FOLD 4 RUNNING (no deadline yet; user will give a hand-back time). User priority: A, B, ours first.
+   19:12 run_fold4.sh launched; 19:20 re-prioritised: specimen_cond aborted 3 min in on GPU6 (partial dir
+   moved to results_spatial/ABORTED_ClariGAN_stratified_fold_4_sp_speccond_20261004, 13 GB, delete only
+   with the user's word; old log logs_sp_speccond_f4.aborted.log), run_fold4.sh parent + GPU3 subshell killed.
+   Now: GPU2 refA -> stock (run_fold4.sh subshell) | GPU3 refB -> specimen_cond (run_fold4_prio.sh waits
+   on refB's run_until pid 4126294) | GPU6 primary (run_fold4_prio.sh). A/B/ours ~21:15, rest ~23:30.
+   Done marker: FOLD4_PRIO_DONE in logs_fold4_prio_launcher.log (stock is tracked via its own log).
    Original launch instructions (user assigned GPUs 2, 3, 6 on Oct 4):
      cd /local/emir/ClariDi && setsid nohup ./run_fold4.sh > logs_fold4_launcher.log 2>&1 < /dev/null &
    GPU2: refA then stock | GPU3: refB then primary | GPU6: specimen_cond. ~2 h per job incl. eval,
