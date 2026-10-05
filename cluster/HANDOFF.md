@@ -8,6 +8,9 @@ Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md
    with the user's word; old log logs_sp_speccond_f4.aborted.log), run_fold4.sh parent + GPU3 subshell killed.
    Now: GPU2 refA -> stock (run_fold4.sh subshell) | GPU3 refB -> specimen_cond (run_fold4_prio.sh waits
    on refB's run_until pid 4126294) | GPU6 primary (run_fold4_prio.sh). A/B/ours ~21:15, rest ~23:30.
+   21:05 refB, 21:07 refA, 21:14 primary fold 4 DONE (exit 0, 750 outputs each) -> A, B, ours have all 5 folds.
+   stock (GPU2) started 21:07, specimen_cond (GPU3) 21:05; expected ~23:10. GPU6 is free (tell the user).
+   Interim fold-4 LPIPS (A/B/primary only): analysis/lpips_fold4_interim_ABprimary.txt (primary .503, A .437, B .440).
    Done marker: FOLD4_PRIO_DONE in logs_fold4_prio_launcher.log (stock is tracked via its own log).
    Original launch instructions (user assigned GPUs 2, 3, 6 on Oct 4):
      cd /local/emir/ClariDi && setsid nohup ./run_fold4.sh > logs_fold4_launcher.log 2>&1 < /dev/null &
