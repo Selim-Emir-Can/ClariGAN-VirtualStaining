@@ -2,7 +2,9 @@
 Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md) and the HF archive (§7).
 
 ## 0. NEXT SESSION: WHAT TO DO
-1. Launch fold 4 (the user assigned GPUs 2, 3, 6 on Oct 4; they were idle at 19:05):
+1. FOLD 4 LAUNCHED 2026-10-04 19:12 PDT (no deadline; user will give a hand-back time later).
+   If a deadline arrives: running jobs finish; to stop queued stock/primary, kill per §6 order.
+   Original launch instructions (user assigned GPUs 2, 3, 6 on Oct 4):
      cd /local/emir/ClariDi && setsid nohup ./run_fold4.sh > logs_fold4_launcher.log 2>&1 < /dev/null &
    GPU2: refA then stock | GPU3: refB then primary | GPU6: specimen_cond. ~2 h per job incl. eval,
    so ~4 h total. If the user gives a hand-back time, pass DEADLINE="YYYY-MM-DD HH:MM" (a job only
