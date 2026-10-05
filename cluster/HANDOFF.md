@@ -8,6 +8,11 @@ Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md
    lpips_folds_0_1_2_3_4.json (fold-4 tiles visible). Launch details: run_fold4.sh / run_fold4_prio.sh, git history.
 2. Waiting on the user: picks/grades export; then slide deck for the postdoc (methods in LaTeX + 1-2 grids
    per specimen from the user's picks). Do not start until told.
+   Deck (Oct 5, private claude.ai artifact): https://claude.ai/artifact/R6DQoPLKF7CRBvhfD2pQ4i — 8 slides,
+   training diagram + variant differences only, styled after manuscript Fig. 7 (Times, blue frozen VQ-GAN, green
+   L-BBDM, navy dashed). No results/picks yet. Equations rendered with matplotlib mathtext (cm) as PNG assets.
+   Manuscript issue flagged to the user: Fig. 2 panel letters (Brain: G-K, Heart: A-F) and its caption (brain A-F,
+   heart G-K) both disagree with Fig. 5 and the manifest (brain A,D,E,G,H,I; heart B,C,F,J,K,L).
 3. Proposed, NOT started (user said "might be worth trying"): specimen-balanced sampling (new config,
    batches draw specimens evenly). Needs GPUs + the user's word.
 4. Offered, NOT started: nuclei-level evaluation (Cellpose/StarDist counts, density, detection F1 vs GT)
