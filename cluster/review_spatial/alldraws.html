@@ -1,0 +1,98 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>ClariDi all-draws grader</title>
+<style>
+ :root{--bg:#111;--fg:#ddd;--mut:#888;--acc:#4da3ff;--card:#1b1b1b;--g1:#3c3;--g2:#9c3;--g3:#e93;--g4:#e44}
+ body{margin:0;background:var(--bg);color:var(--fg);font:13px system-ui,sans-serif}
+ header{position:sticky;top:0;background:#000;padding:8px 12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #333;z-index:5}
+ header label{display:flex;gap:4px;align-items:center;color:var(--mut)}
+ select,button,input{background:#222;color:var(--fg);border:1px solid #444;border-radius:4px;padding:3px 6px;font:inherit} button{cursor:pointer}
+ #stat{margin-left:auto;color:var(--mut)} main{padding:10px 12px}
+ #title{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px} #title h2{margin:0;font-size:16px} #title span{color:var(--mut)}
+ .panel{display:flex;gap:12px;align-items:center;padding:5px;border:2px solid #333;border-radius:6px;margin-bottom:6px;background:var(--card);cursor:pointer}
+ .panel.focus{border-color:var(--acc);background:#1e2a3a}
+ .panel .ttl{width:170px;flex:none;line-height:1.6;white-space:pre-line}
+ .cells{display:flex;gap:4px} .cell{width:var(--sz)} .cell img{width:var(--sz);height:var(--sz);display:block;background:#000}
+ .cell div{font-size:11px;color:var(--mut);padding:1px 0 2px} .cell.ref div{color:#bbb}
+ .panel.g1{border-color:var(--g1)} .panel.g2{border-color:var(--g2)} .panel.g3{border-color:var(--g3)} .panel.g4{border-color:var(--g4)}
+ .panel.focus.g1,.panel.focus.g2,.panel.focus.g3,.panel.focus.g4{box-shadow:0 0 0 3px var(--acc)}
+ .gb{display:inline-block;min-width:14px;padding:0 5px;border-radius:3px;color:#000;font-weight:600}
+ .gb.g1{background:var(--g1)} .gb.g2{background:var(--g2)} .gb.g3{background:var(--g3)} .gb.g4{background:var(--g4)} .gb.g0{background:#444;color:#aaa}
+ kbd{background:#333;border-radius:3px;padding:0 4px;font-size:11px} .lp{color:var(--mut);font-size:12px}
+</style></head><body>
+<header>
+ <label>fold <select id="fFold"><option value="">all</option></select></label>
+ <label>specimen <select id="fSpec"><option value="">all</option></select></label>
+ <label>tissue <select id="fTis"><option value="">all</option><option>brain</option><option>heart</option></select></label>
+ <label>scale <select id="fSc"><option value="">all</option><option>5x5</option><option>10x10</option></select></label>
+ <label>show <select id="fShow"><option value="">all tiles</option><option value="ungraded">not fully graded</option><option value="graded">fully graded</option></select></label>
+ <label><input type="checkbox" id="fBlind"> blind (shuffle, hide names)</label>
+ <label><input type="checkbox" id="fLp"> show LPIPS</label>
+ <label>size <select id="fSz"><option value="150">S</option><option value="190" selected>M</option><option value="240">L</option></select></label>
+ <button id="prevBtn">&larr; prev</button><button id="nextBtn">next &rarr;</button><button id="nextUn">next ungraded</button><button id="nextSpec" title="skip the rest of this specimen: go to the next letter's first ungraded tile (n; Shift+N = previous letter)">skip to next specimen &#8677;</button>
+ <button id="exportBtn">export grades</button><label>import <input type="file" id="importBtn" style="width:140px"></label>
+ <span id="stat"></span>
+</header>
+<main><div id="title"></div><div id="strip"></div>
+<p style="color:#666">Each row is one model: Condition | Ground Truth | its 5 draws (gen 0-4, seeds 1234-1238). One grade per model per tile, judged over all 5 draws. Keys: <kbd>1</kbd> good · <kbd>2</kbd> acceptable · <kbd>3</kbd> bad ·
+<kbd>4</kbd> completely incorrect (grades the focused panel, then moves to the next panel, then the next tile) · <kbd>0</kbd> clear ·
+<kbd>&uarr;</kbd>/<kbd>&darr;</kbd> focus · <kbd>&larr;</kbd>/<kbd>&rarr;</kbd> tile · <kbd>n</kbd>/<kbd>Shift+N</kbd> skip to next/previous specimen (first ungraded tile). Blind mode shuffles the five models per tile and hides their names; grades are always stored under the true model.
+Grades live in this browser; use <em>export grades</em> to save them as JSON.</p></main>
+<script>
+const EXPS=[["sp_stock_vqgan","vanilla L-BBDM (stock VQGAN)"],["sp_primary","our L-BBDM"],["sp_specimen_cond","+ specimen label"],["sp_refA_stained","+ A stained refs"],["sp_refB_unstained","+ B unstained ctx"]];
+const NAME=Object.fromEntries(EXPS), GR={1:"good",2:"acceptable",3:"bad",4:"completely incorrect"};
+const $=s=>document.querySelector(s);
+let tiles=[],view=[],cur=0,focus=0;
+let grades={}; try{grades=JSON.parse(localStorage.getItem("sp_grades_all")||"{}")}catch(e){}
+const save=()=>{try{localStorage.setItem("sp_grades_all",JSON.stringify(grades))}catch(e){}};
+const csv=t=>{const r=t.trim().split(/\r?\n/).map(l=>l.split(","));return r.slice(1).map(x=>Object.fromEntries(r[0].map((k,i)=>[k,x[i]])))};
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+function hash(s){let h=7;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return h}
+function order(t){const o=EXPS.map(e=>e[0]);if(!$("#fBlind").checked)return o;let h=hash(t.tile_id);return o.map(e=>[((h=(h*1103515245+12345)|0)>>>0),e]).sort((a,b)=>a[0]-b[0]).map(x=>x[1])}
+const g=(t,e)=>(grades[t.tile_id]||{})[e]||0, full=t=>EXPS.every(([e])=>g(t,e));
+async function load(){
+  const [man,split,lp]=await Promise.all([fetch("../data/bbdm256/manifest.csv").then(r=>r.text()),fetch("../data/splits/model_design_exp_split.csv").then(r=>r.text()),
+    fetch("../analysis/lpips_folds_0_1_2_3.json").then(r=>r.json())]);
+  const band=Object.fromEntries(csv(split).map(r=>[r.tile_id,+r.band]));
+  tiles=csv(man).filter(r=>lp[r.tile_id]).map(r=>({...r,fold:band[r.tile_id],lp:Object.fromEntries(EXPS.map(([e])=>[e,mean(lp[r.tile_id][e])]))}))
+    .sort((a,b)=>a.fold-b.fold||a.tile_id.localeCompare(b.tile_id));
+  const fill=(id,v)=>v.forEach(x=>{const o=document.createElement("option");o.value=o.textContent=x;$(id).appendChild(o)});
+  fill("#fFold",[...new Set(tiles.map(t=>t.fold))].sort());fill("#fSpec",[...new Set(tiles.map(t=>t.specimen))].sort());
+  filter();
+}
+function filter(){const f=$("#fFold").value,s=$("#fSpec").value,ti=$("#fTis").value,sc=$("#fSc").value,sh=$("#fShow").value;
+  const id=view[cur]&&view[cur].tile_id;
+  view=tiles.filter(t=>(f===""||t.fold==f)&&(!s||t.specimen==s)&&(!ti||t.tissue==ti)&&(!sc||t.scale==sc)&&(!sh||(sh=="graded")==full(t)));
+  const i=view.findIndex(t=>t.tile_id==id);cur=i>=0?i:0;show(true)}
+function show(resetFocus){document.documentElement.style.setProperty("--sz",$("#fSz").value+"px");const t=view[cur];const st=$("#strip");st.innerHTML="";
+  const n=tiles.filter(full).length;const sp=$("#fSpec").value,ss=sp?tiles.filter(x=>x.specimen==sp):[];$("#stat").textContent=`${sp?"specimen "+sp+": "+ss.filter(full).length+"/"+ss.length+" graded · ":""}tile ${view.length?cur+1:0} / ${view.length} · ${n} of ${tiles.length} fully graded`;
+  if(!t){$("#title").innerHTML="<h2>no tiles match</h2>";return}
+  $("#title").innerHTML=`<h2>${t.tile_id}</h2><span>fold ${t.fold} · specimen ${t.specimen} · ${t.tissue} · ${t.scale}${t.masked=="True"?" · masked":""}</span>`;
+  const o=order(t),blind=$("#fBlind").checked,lpOn=$("#fLp").checked;
+  if(resetFocus){focus=Math.max(0,o.findIndex(e=>!g(t,e)))}
+  o.forEach((e,i)=>{const v=g(t,e);const p=document.createElement("div");p.className=`panel g${v}${i==focus?" focus":""}`;
+    const cell=(src,cap,cls="")=>`<div class="cell ${cls}"><div>${cap}</div><img loading="lazy" src="${src}"></div>`;
+    p.innerHTML=`<div class="ttl"><b>${blind?"model "+(i+1):NAME[e]}</b>\n${v?`<span class="gb g${v}">${v}</span> ${GR[v]}`:"<span class='gb g0'>–</span> ungraded"}${lpOn&&!blind?`\n<span class="lp">LPIPS ${t.lp[e].toFixed(3)}</span>`:""}</div>
+      <div class="cells">${cell(`../data/bbdm256/train/A/${t.input_filename}`,"Condition","ref")}${cell(`../data/bbdm256/train/B/${t.target_filename}`,"Ground Truth","ref")}${
+        [0,1,2,3,4].map(j=>cell(`../deliverables_spatial/${e}/samples/fold_${t.fold}/${t.tile_id}_gen${j}.png`,`Output gen ${j}`)).join("")}</div>`;
+    p.onclick=()=>{focus=i;show(false)};st.appendChild(p)});
+  const fp=st.querySelector(".focus");if(fp)fp.scrollIntoView({block:"nearest"})}
+function grade(v){const t=view[cur];if(!t)return;const e=order(t)[focus];grades[t.tile_id]=grades[t.tile_id]||{};
+  if(v)grades[t.tile_id][e]=v;else delete grades[t.tile_id][e];save();
+  if(v&&focus<4){focus++;show(false)}else if(v&&focus==4){step(1)}else show(false)}
+function step(d){if($("#fShow").value=="ungraded"){filter();}const n=cur+d;if(n>=0&&n<view.length){cur=n;show(true);scrollTo(0,0)}else show(false)}
+$("#prevBtn").onclick=()=>step(-1);$("#nextBtn").onclick=()=>step(1);
+$("#nextUn").onclick=()=>{const i=view.findIndex((t,k)=>k>cur&&!full(t));if(i>=0){cur=i;show(true);scrollTo(0,0)}};
+function jumpSpec(d){const specs=[...new Set(tiles.map(t=>t.specimen))].sort();const c=$("#fSpec").value||(view[cur]||{}).specimen;
+  const i=specs.indexOf(c),j=i<0?(d>0?0:specs.length-1):i+d;if(j<0||j>=specs.length)return;
+  $("#fSpec").value=specs[j];filter();const k=view.findIndex(t=>!full(t));if(k>=0){cur=k;show(true)}scrollTo(0,0)}
+$("#nextSpec").onclick=()=>jumpSpec(1);
+document.onkeydown=e=>{if(e.target.tagName=="INPUT"&&e.target.type!="checkbox"||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.key=="n")jumpSpec(1);if(e.key=="N")jumpSpec(-1);
+  if("1234".includes(e.key)&&e.key)grade(+e.key);if(e.key=="0")grade(0);
+  if(e.key=="ArrowLeft")step(-1);if(e.key=="ArrowRight")step(1);
+  if(e.key=="ArrowUp"){e.preventDefault();focus=Math.max(0,focus-1);show(false)}if(e.key=="ArrowDown"){e.preventDefault();focus=Math.min(4,focus+1);show(false)}};
+$("#exportBtn").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(grades,null,1)],{type:"application/json"}));a.download="sp_grades_alldraws.json";a.click()};
+$("#importBtn").onchange=e=>{const r=new FileReader();r.onload=()=>{Object.assign(grades,JSON.parse(r.result));save();show(false)};r.readAsText(e.target.files[0])};
+["fFold","fSpec","fTis","fSc","fShow"].forEach(id=>$("#"+id).onchange=filter);["fBlind","fLp","fSz"].forEach(id=>$("#"+id).onchange=()=>show(true));
+load();
+</script></body></html>

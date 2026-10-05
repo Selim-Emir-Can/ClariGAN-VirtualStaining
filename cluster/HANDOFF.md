@@ -86,6 +86,8 @@ pid 3808976; restart with setsid nohup if dead). User opens them via VS Code Por
 - review_spatial/alldraws.html — per tile, one row per method: Condition | GT | gen0-4. Grade 1-4 per
   method; localStorage "sp_grades_all"; export -> sp_grades_alldraws.json. Names shown by default
   (blind checkbox shuffles/hides).
+- Oct 4: alldraws.html + titled.html got 'skip to next specimen' + n / Shift+N (sets the specimen filter
+  to the next letter, lands on its first ungraded tile; stat shows 'specimen X: a/b graded').
 - review_spatial/titled.html — per tile, titled plots (Condition|GT|Output, draw 0, from
   review_spatial/make_titled.py -> review_spatial/titled/); localStorage "sp_grades".
 - review_spatial/index.html ("the picker") — side-by-side + LPIPS summary; picks in localStorage "sp_picks",
