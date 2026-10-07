@@ -62,21 +62,23 @@ def _next_same_tissue(specimen, pool, by_tissue):
 def make_spatial_folds(records, split_file):
     """Folds from a spatial split CSV (spatial_split.py): every specimen appears in train, val
     and test of every fold; band k is test, its neighbour band is val, the rest is train."""
-    from spatial_split import N_BANDS, val_band
-    band = {r["tile_id"]: int(r["band"]) for r in csv.DictReader(open(split_file))}
-    missing = [r["tile_id"] for r in records if r["tile_id"] not in band]
+    from spatial_split import N_BANDS, role
+    split = {r["tile_id"]: r for r in csv.DictReader(open(split_file))}
+    missing = [r["tile_id"] for r in records if r["tile_id"] not in split]
     if missing:
         raise ValueError(f"{len(missing)} manifest tiles missing from {split_file}, e.g. {missing[0]}")
     folds = []
     for k in range(N_BANDS):
-        part = lambda r: "test" if band[r["tile_id"]] == k else "val" if band[r["tile_id"]] == val_band(k) else "train"
+        part = lambda r: role(split[r["tile_id"]], k)       # "excluded" tiles sit out this fold (v2 purge)
         fold = {"fold": k, "scheme": "spatial"}
         for p in ("train", "val", "test"):
             rs = [r for r in records if part(r) == p]
             fold[p] = [(r["input_path"], r["target_path"]) for r in rs]
             fold[f"{p}_specimens"] = sorted({r["specimen"] for r in rs})
         files = [a for p in ("train", "val", "test") for a, _ in fold[p]]
-        assert len(files) == len(set(files)) == len(records), f"fold {k}: partition coverage broken"
+        n_excl = sum(part(r) == "excluded" for r in records)
+        assert len(files) == len(set(files)) == len(records) - n_excl, f"fold {k}: partition coverage broken"
+        fold["excluded"] = n_excl
         folds.append(fold)
     return folds
 
