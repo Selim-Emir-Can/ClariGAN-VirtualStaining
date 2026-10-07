@@ -19,6 +19,16 @@ Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md
    website_clone/. To update: rebuild, rsync -a --delete --exclude 'build_*.py' --exclude 'tools/' website_ClariDi/
    website_clone/ClariDi/, commit, push (TMPDIR on /local). Email draft for Michael given to the user.
    Root fs / (incl /tmp) is 100% full (other users): keep temp files on /local; Bash output capture breaks when /tmp is full.
+   Oct 7, Michael's review (needs: fold wording, interpolation framing, D part 0, all-draw aggregate, oracle labels).
+   DONE: site commit 02b4154 (scope = within-specimen interpolation; D part 0 note; '(oracle)' / '(extra input)' labels;
+   all-draw tables from analysis/metrics_all_draws.py -> metrics_all_draws.md/json: per-draw score, specimen-macro,
+   mean +- SD over 5 draws, + without D_p0); proposed split v2 at splits_v2.html (build_split_v2.py).
+   Split v2 = data/splits/model_design_exp_split_v2.csv (repo 98d9584): D_p0 (non-nested 6x6 vs 10x10 grids) banded
+   per tile with per-fold purge (role_f0..4 incl. 'excluded'; 3-9 tiles/fold, all D_p0); long axis now from tissue
+   extent (v1 bug flipped D_p0 and J; 60 tiles change band). v1 CSV/results untouched; v1 folds reproduce.
+   NEXT: user checks v2; then retrain 5 models x 5 folds on v2 (sp2_* tags, ~50 GPU-h; needs GPUs: Oct 7 all 10 busy,
+   austinchi 0-6, brianchc 7-9); rerun metrics; rebuild site; write the summary for the manuscript session (other machine).
+   User: '5 folds' remark = only 5 of a planned 10 folds were run; may switch to 5 folds as final.
 3. Proposed, NOT started (user said "might be worth trying"): specimen-balanced sampling (new config,
    batches draw specimens evenly). Needs GPUs + the user's word.
 4. Offered, NOT started: nuclei-level evaluation (Cellpose/StarDist counts, density, detection F1 vs GT)
