@@ -38,6 +38,8 @@ Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md
    job stops its GPU's worker (v2b_failed.txt). GAN driver now has --scheme spatial --split_file. prune_v2b.sh replaces
    prune_v2.sh (also GANs: keeps latest_net_G.pth). VQ-GAN weights uploaded to HF claridi-results/weights/.
    run_v2c_extra.sh: GPUs 8/9 (user: until 10:00 Oct 8) take v2b jobs that fit before 10:00 (longest that fits).
+   run_v2d_until17.sh: GPUs 6/7 left run_v2b_queue (workers killed) and only take jobs ending before 17:00 Oct 8
+   (user: drop to 3 GPUs = 1 3 4 at 17:00). GPUs 1 3 4 stay on run_v2b_queue.sh until the queue is empty.
    New-machine setup prompt: cluster/NEW_MACHINE_PROMPT.md.
    Was: user checks v2; then retrain 5 models x 5 folds on v2 (sp2_* tags, ~50 GPU-h; needs GPUs: Oct 7 all 10 busy,
    austinchi 0-6, brianchc 7-9); rerun metrics; rebuild site; write the summary for the manuscript session (other machine).
