@@ -33,6 +33,11 @@ Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md
    as site JPEGs + analysis/*.json metrics. prune_v2.sh (logs_prune_v2.log) keeps top_model + config per v2 run once its
    timing_fold_k.csv exists and its run_kfold is gone. For v2 analysis/site: point metrics_all_draws.py (D=, split, lpips json)
    and build_site.py (GEN, SPLIT, LPIPS) at deliverables_spatial_v2 / split v2; LPIPS via lpips_compare.py needs the same.
+   Oct 8 ~01:00: queued remaining methods on split v2 (user): run_v2b_queue.sh (v2b_queue.txt; pixel, cwgan, encoder,
+   pix2pix x 5 folds, longest first) on GPUs 1 3 4 6 7, each starting once its GPU leaves the diffusion queue; a failed
+   job stops its GPU's worker (v2b_failed.txt). GAN driver now has --scheme spatial --split_file. prune_v2b.sh replaces
+   prune_v2.sh (also GANs: keeps latest_net_G.pth). VQ-GAN weights uploaded to HF claridi-results/weights/.
+   New-machine setup prompt: cluster/NEW_MACHINE_PROMPT.md.
    Was: user checks v2; then retrain 5 models x 5 folds on v2 (sp2_* tags, ~50 GPU-h; needs GPUs: Oct 7 all 10 busy,
    austinchi 0-6, brianchc 7-9); rerun metrics; rebuild site; write the summary for the manuscript session (other machine).
    User: '5 folds' remark = only 5 of a planned 10 folds were run; may switch to 5 folds as final.

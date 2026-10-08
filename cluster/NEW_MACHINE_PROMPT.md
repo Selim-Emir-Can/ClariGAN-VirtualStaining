@@ -5,8 +5,8 @@ You are setting up the ClariDi virtual-staining experiments on a new machine. I'
 - READ FIRST: `cluster/HANDOFF.md` (current state, decisions, standing rules), then `cluster/RUN_NOTES.md` and `cluster/README_cluster.md`.
 - Data: private HF dataset `SelimEmirCan/claridi-results`, folder `data_256/` (753 input/target pairs at 256 px + manifest), plus `manifest.csv` at the repo root. The native-resolution originals are in the private HF dataset `SelimEmirCan/claridi` (`cluster/materialize_dataset.py`). They're only needed to regenerate split CSVs.
 - Weights (frozen VQ-GANs):
-  - Fine-tuned VQ-GAN `epoch=000022.ckpt`, md5 3dcd0c2eba10bbbdbbef3970d1a214a0: [HF location if uploaded, otherwise ask me].
-  - Stock ImageNet VQ-GAN `vqgan_imagenet_f16_16384_stock.ckpt`, md5 229b53ca2f1e5878d593b9021a5442c9, from taming-transformers (ImageNet f16 16384).
+  - Fine-tuned VQ-GAN `epoch=000022.ckpt`, md5 3dcd0c2eba10bbbdbbef3970d1a214a0: private HF dataset `SelimEmirCan/claridi-results`, `weights/epoch=000022.ckpt`.
+  - Stock ImageNet VQ-GAN `vqgan_imagenet_f16_16384_stock.ckpt` + `.yaml`, md5 229b53ca2f1e5878d593b9021a5442c9: same HF dataset, `weights/`.
 - Old leave-one-specimen-out (LOSO) campaign, archived only: HF `SelimEmirCan/claridi-results` and `SelimEmirCan/claridi-checkpoints`. Not used any more.
 
 ## Setup
