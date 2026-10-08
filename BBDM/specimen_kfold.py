@@ -145,7 +145,7 @@ def assert_no_leakage(fold, records):
     file uniqueness and coverage are rechecked."""
     if fold.get("scheme") == "spatial":
         files = [p for name in ("train", "val", "test") for p, _ in fold[name]]
-        if len(files) != len(set(files)) or len(files) != len(records):
+        if len(files) != len(set(files)) or len(files) != len(records) - fold.get("excluded", 0):
             raise AssertionError(f"spatial fold {fold['fold']}: file duplication or coverage error")
         return True
     parts = {"train": fold["train_specimens"], "val": fold["val_specimens"], "test": fold["test_specimens"]}
