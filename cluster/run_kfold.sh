@@ -17,6 +17,8 @@ STOCK_VQGAN=${STOCK_VQGAN:-$ROOT/weights/vqgan_imagenet_f16_16384_stock.ckpt}
 GPUS=${GPUS:-0}
 export CLARIDI_NUM_WORKERS=${CLARIDI_NUM_WORKERS:-4}   # 256px PNGs decode fast; 8/job oversubscribed the box
 export TORCH_HOME=$ROOT/.cache/torch   # keep LPIPS/VGG weights off the full home disk
+export TMPDIR=$ROOT/.cache/tmp        # / is 100% full (23 GB free, other users' files);
+mkdir -p $TMPDIR                      # keep our multiprocessing temp dirs on /local
 SCHEME=${SCHEME:-loso}
 source /home/emir/miniconda3/etc/profile.d/conda.sh
 conda activate chatgarment

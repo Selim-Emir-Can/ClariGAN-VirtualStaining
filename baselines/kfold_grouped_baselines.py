@@ -47,7 +47,8 @@ def parse_args():
     p.add_argument("--baseline", choices=list(BASELINES), required=True)
     p.add_argument("--data_root", required=True, help="dir with train/A, train/B, manifest.csv")
     p.add_argument("--manifest", default=None)
-    p.add_argument("--scheme", choices=["loso", "grouped"], default="loso")
+    p.add_argument("--scheme", choices=["loso", "grouped", "spatial"], default="loso")
+    p.add_argument("--split_file", default=None, help="spatial split CSV (BBDM/spatial_split.py), for --scheme spatial")
     p.add_argument("--n_folds", type=int, default=5)
     p.add_argument("--folds", default=None, help="comma-separated fold indices (default all)")
     p.add_argument("--gpu", default="0", help="single GPU index")
@@ -121,7 +122,7 @@ def main():
         os.makedirs(d, exist_ok=True)
 
     records = load_manifest(a.manifest or os.path.join(a.data_root, "manifest.csv"), a.data_root)
-    folds = make_folds(records, a.scheme, a.n_folds)
+    folds = make_folds(records, a.scheme, a.n_folds, a.split_file)
     print(f"{a.baseline}: {len(records)} patches, {len(folds)} folds ({a.scheme})")
     print(format_fold_table(fold_table(folds, records)))
     for f in folds:
@@ -147,7 +148,7 @@ def main():
         tr = write_list(f["train"], os.path.join(lists_dir, f"fold_{k}_train.txt"))
         va = write_list(f["val"], os.path.join(lists_dir, f"fold_{k}_val.txt"))
         te = write_list(f["test"], os.path.join(lists_dir, f"fold_{k}_test.txt"))
-        print(f"\n=== {a.baseline} fold {k}: test={f['test_specimens']} val={f['val_specimens']} "
+        print(f"\n=== {a.baseline} fold {k}: test={f['test_specimens']} val={f['val_specimens']} "  # spatial: all specimens
               f"train={len(f['train'])} pairs ===", flush=True)
 
         common = ["--name", name, "--checkpoints_dir", ckpt_dir, "--model", B["model"],
