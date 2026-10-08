@@ -19,11 +19,11 @@ from PIL import Image
 
 R = "/local/emir/ClariDi"
 OUT = os.path.dirname(os.path.abspath(__file__))
-SPLIT = f"{R}/data/splits/model_design_exp_split.csv"
+SPLIT = f"{R}/data/splits/model_design_exp_split_v2.csv"   # v2: band == test fold
 MANIFEST = f"{R}/data/bbdm256/manifest.csv"
 IMG = f"{R}/data/bbdm256/train"
-GEN = f"{R}/deliverables_spatial"
-LPIPS = f"{R}/analysis/lpips_folds_0_1_2_3_4.json"
+GEN = f"{R}/deliverables_spatial_v2"
+LPIPS = f"{R}/analysis/v2/lpips_folds_0_1_2_3_4.json"
 SIZE, Q, Q_VS = 256, 85, 80     # references at q85; VS outputs at q80 to fit all 25 draws in the size budget
 THUMB_LONG = 360
 SPLIT_LONG = 720
