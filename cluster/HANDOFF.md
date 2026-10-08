@@ -29,6 +29,10 @@ Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md
    Oct 7 23:55: switched to shared queue run_v2_queue.sh (v2_queue.txt, flock): GPUs 1 3 4 6 7 + 8 9; 8/9 start no job
    that would end after 09:00 Oct 8 (user). Original: run_v2.sh, logs_v2_gpu<id>.log, ~10 h; order Ours, Vanilla, B,
    label, A (one fold per GPU each). Spec-leak check fixed (excluded tiles) in 04d79d0. 5 folds is final (user).
+   Oct 8 00:46 (user): DELETED v1 results_spatial/ (71 GB ckpts) + deliverables_spatial/ (v1 generations); v1 survives only
+   as site JPEGs + analysis/*.json metrics. prune_v2.sh (logs_prune_v2.log) keeps top_model + config per v2 run once its
+   timing_fold_k.csv exists and its run_kfold is gone. For v2 analysis/site: point metrics_all_draws.py (D=, split, lpips json)
+   and build_site.py (GEN, SPLIT, LPIPS) at deliverables_spatial_v2 / split v2; LPIPS via lpips_compare.py needs the same.
    Was: user checks v2; then retrain 5 models x 5 folds on v2 (sp2_* tags, ~50 GPU-h; needs GPUs: Oct 7 all 10 busy,
    austinchi 0-6, brianchc 7-9); rerun metrics; rebuild site; write the summary for the manuscript session (other machine).
    User: '5 folds' remark = only 5 of a planned 10 folds were run; may switch to 5 folds as final.
