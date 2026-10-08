@@ -37,6 +37,7 @@ Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md
    pix2pix x 5 folds, longest first) on GPUs 1 3 4 6 7, each starting once its GPU leaves the diffusion queue; a failed
    job stops its GPU's worker (v2b_failed.txt). GAN driver now has --scheme spatial --split_file. prune_v2b.sh replaces
    prune_v2.sh (also GANs: keeps latest_net_G.pth). VQ-GAN weights uploaded to HF claridi-results/weights/.
+   run_v2c_extra.sh: GPUs 8/9 (user: until 10:00 Oct 8) take v2b jobs that fit before 10:00 (longest that fits).
    New-machine setup prompt: cluster/NEW_MACHINE_PROMPT.md.
    Was: user checks v2; then retrain 5 models x 5 folds on v2 (sp2_* tags, ~50 GPU-h; needs GPUs: Oct 7 all 10 busy,
    austinchi 0-6, brianchc 7-9); rerun metrics; rebuild site; write the summary for the manuscript session (other machine).
