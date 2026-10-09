@@ -61,7 +61,7 @@ Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md
    cWGAN on HF also collapsed in folds 2,8,9. User: "if it's unstable it's unstable" -> reported as run, not retrained.
    Metrics (all 9 methods) in analysis/v2/; site published a537b35b (9 methods, cWGAN note). Parquet: pack_parquet.py
    --split_csv (v2 test-tile check) + consolidate_parquet.py --v2 -> deliverables_spatial_v2/parquet_merged/ (2.2 GB,
-   verified vs PNGs; NOT uploaded: needs the user's OK). Manuscript summary: analysis/v2/MANUSCRIPT_SUMMARY_v2.md,
+   verified vs PNGs; uploaded Oct 9 to HF claridi-results/spatial_v2/ (commit bf73ce9, 79 files, 2.54 GB; checkpoints NOT uploaded). Manuscript summary: analysis/v2/MANUSCRIPT_SUMMARY_v2.md,
    uploaded to HF claridi-results/manuscript_handoff/ (commit fa876e4). Caveats flagged: pix2pix > Ours on PSNR/SSIM;
    Vanilla > Ours on PSNR; Vanilla moved +0.08 SSIM v1->v2 (training-seed variance unmeasured).
    Was: user checks v2; then retrain 5 models x 5 folds on v2 (sp2_* tags, ~50 GPU-h; needs GPUs: Oct 7 all 10 busy,
