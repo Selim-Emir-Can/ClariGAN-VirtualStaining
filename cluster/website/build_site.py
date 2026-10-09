@@ -35,6 +35,10 @@ MODELS = [
     ("spec",  "sp_specimen_cond",  "Ours + specimen label (oracle)", "+ specimen label (oracle)", [0, 1, 2, 3, 4]),
     ("refA",  "sp_refA_stained",   "Ours + A stained refs (extra input)", "+ A stained refs (extra input)", [0, 1, 2, 3, 4]),
     ("refB",  "sp_refB_unstained", "Ours + B unstained ctx",       "+ B unstained ctx", [0, 1, 2, 3, 4]),
+    ("pixel", "pixel_space",       "Pixel-space BBDM",             "Pixel-space BBDM",  [0, 1, 2, 3, 4]),
+    ("enc",   "trainable_encoder", "Ours + trainable encoder",     "+ trainable encoder", [0, 1, 2, 3, 4]),
+    ("cwgan", "cwgan",             "cWGAN",                        "cWGAN",             [0]),   # one output per tile
+    ("p2p",   "pix2pix",           "pix2pix",                      "pix2pix",           [0]),
 ]
 
 

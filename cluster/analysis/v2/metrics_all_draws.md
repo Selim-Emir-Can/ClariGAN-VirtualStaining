@@ -1,6 +1,6 @@
 # ClariDi spatial split (v2): all five draws, predefined aggregate
 
-Protocol: see the docstring of analysis/metrics_all_draws.py. Cells are mean ± SD across the 5 draws of the specimen-macro mean (each draw scored separately; no best-of-n). 256 px, vs C&SF. GANs (cWGAN, pix2pix): one deterministic output per tile, so a single value, no SD.
+Protocol: see the docstring of analysis/metrics_all_draws.py. Cells are mean ± SD across the 5 draws of the specimen-macro mean (each draw scored separately; no best-of-n). 256 px, vs C&SF. GANs (cWGAN, pix2pix): one output per tile (single seeded inference pass), so a single value, no SD.
 
 ## All tiles, specimen-macro (primary) (n = 753 tiles, 11 specimens)
 
@@ -11,6 +11,10 @@ Protocol: see the docstring of analysis/metrics_all_draws.py. Cells are mean ± 
 | + specimen label (oracle) | 0.454 ± 0.002 | 19.44 ± 0.11 | 0.509 ± 0.003 | 0.068 ± 0.003 |
 | + A stained refs (extra input) | 0.457 ± 0.002 | 19.16 ± 0.10 | 0.500 ± 0.006 | 0.078 ± 0.003 |
 | + B unstained ctx | 0.485 ± 0.002 | 18.73 ± 0.10 | 0.490 ± 0.008 | 0.106 ± 0.004 |
+| Pixel-space BBDM | 0.594 ± 0.002 | 17.73 ± 0.17 | 0.457 ± 0.004 | 0.173 ± 0.002 |
+| Ours + trainable encoder | 0.704 ± 0.005 | 14.84 ± 0.20 | 0.363 ± 0.011 | 0.172 ± 0.003 |
+| cWGAN (1 draw) | 0.888 | 12.01 | 0.397 | 0.347 |
+| pix2pix (1 draw) | 0.582 | 19.35 | 0.509 | 0.134 |
 
 ## All tiles, tile-micro (n = 753 tiles, 11 specimens)
 
@@ -21,6 +25,10 @@ Protocol: see the docstring of analysis/metrics_all_draws.py. Cells are mean ± 
 | + specimen label (oracle) | 0.458 ± 0.003 | 19.28 ± 0.12 | 0.506 ± 0.003 | 0.070 ± 0.003 |
 | + A stained refs (extra input) | 0.460 ± 0.002 | 19.05 ± 0.11 | 0.498 ± 0.006 | 0.079 ± 0.003 |
 | + B unstained ctx | 0.489 ± 0.001 | 18.59 ± 0.10 | 0.489 ± 0.007 | 0.107 ± 0.004 |
+| Pixel-space BBDM | 0.591 ± 0.001 | 17.72 ± 0.16 | 0.458 ± 0.004 | 0.176 ± 0.003 |
+| Ours + trainable encoder | 0.695 ± 0.005 | 14.82 ± 0.20 | 0.362 ± 0.011 | 0.171 ± 0.003 |
+| cWGAN (1 draw) | 0.891 | 12.00 | 0.396 | 0.346 |
+| pix2pix (1 draw) | 0.583 | 19.30 | 0.510 | 0.129 |
 
 ## Without D part 0, specimen-macro (sensitivity) (n = 732 tiles, 11 specimens)
 
@@ -31,6 +39,10 @@ Protocol: see the docstring of analysis/metrics_all_draws.py. Cells are mean ± 
 | + specimen label (oracle) | 0.454 ± 0.002 | 19.41 ± 0.11 | 0.509 ± 0.003 | 0.068 ± 0.003 |
 | + A stained refs (extra input) | 0.456 ± 0.002 | 19.14 ± 0.11 | 0.501 ± 0.006 | 0.078 ± 0.003 |
 | + B unstained ctx | 0.485 ± 0.002 | 18.70 ± 0.11 | 0.490 ± 0.008 | 0.107 ± 0.004 |
+| Pixel-space BBDM | 0.595 ± 0.001 | 17.72 ± 0.16 | 0.460 ± 0.004 | 0.174 ± 0.003 |
+| Ours + trainable encoder | 0.703 ± 0.005 | 14.85 ± 0.20 | 0.363 ± 0.011 | 0.172 ± 0.003 |
+| cWGAN (1 draw) | 0.889 | 11.96 | 0.397 | 0.346 |
+| pix2pix (1 draw) | 0.582 | 19.33 | 0.510 | 0.132 |
 
 ## Brain, specimen-macro (n = 483 tiles, 6 specimens)
 
@@ -41,6 +53,10 @@ Protocol: see the docstring of analysis/metrics_all_draws.py. Cells are mean ± 
 | + specimen label (oracle) | 0.449 ± 0.004 | 19.70 ± 0.12 | 0.519 ± 0.003 | 0.076 ± 0.005 |
 | + A stained refs (extra input) | 0.448 ± 0.002 | 19.38 ± 0.12 | 0.513 ± 0.007 | 0.088 ± 0.003 |
 | + B unstained ctx | 0.487 ± 0.002 | 18.85 ± 0.11 | 0.502 ± 0.008 | 0.121 ± 0.006 |
+| Pixel-space BBDM | 0.568 ± 0.001 | 18.21 ± 0.14 | 0.471 ± 0.004 | 0.184 ± 0.001 |
+| Ours + trainable encoder | 0.689 ± 0.005 | 14.88 ± 0.24 | 0.364 ± 0.011 | 0.163 ± 0.003 |
+| cWGAN (1 draw) | 0.885 | 11.96 | 0.397 | 0.340 |
+| pix2pix (1 draw) | 0.600 | 19.35 | 0.516 | 0.147 |
 
 ## Heart, specimen-macro (n = 270 tiles, 5 specimens)
 
@@ -51,19 +67,23 @@ Protocol: see the docstring of analysis/metrics_all_draws.py. Cells are mean ± 
 | + specimen label (oracle) | 0.460 ± 0.003 | 19.14 ± 0.11 | 0.497 ± 0.003 | 0.059 ± 0.002 |
 | + A stained refs (extra input) | 0.469 ± 0.002 | 18.90 ± 0.08 | 0.485 ± 0.006 | 0.067 ± 0.004 |
 | + B unstained ctx | 0.483 ± 0.003 | 18.58 ± 0.10 | 0.476 ± 0.008 | 0.089 ± 0.003 |
+| Pixel-space BBDM | 0.625 ± 0.003 | 17.16 ± 0.21 | 0.440 ± 0.004 | 0.161 ± 0.004 |
+| Ours + trainable encoder | 0.722 ± 0.005 | 14.79 ± 0.16 | 0.361 ± 0.011 | 0.182 ± 0.004 |
+| cWGAN (1 draw) | 0.892 | 12.07 | 0.398 | 0.356 |
+| pix2pix (1 draw) | 0.561 | 19.35 | 0.502 | 0.117 |
 
 ## Per specimen: LPIPS ↓, mean ± SD across draws
 
-| specimen | n | Vanilla L-BBDM | Ours (L-BBDM) | + specimen label (oracle) | + A stained refs (extra input) | + B unstained ctx |
-|---|---|---|---|---|---|---|
-| A | 79 | 0.570 ± 0.029 | 0.538 ± 0.020 | 0.396 ± 0.009 | 0.400 ± 0.007 | 0.505 ± 0.006 |
-| B | 55 | 0.575 ± 0.011 | 0.534 ± 0.009 | 0.455 ± 0.003 | 0.471 ± 0.006 | 0.480 ± 0.005 |
-| C | 53 | 0.521 ± 0.004 | 0.472 ± 0.004 | 0.459 ± 0.003 | 0.465 ± 0.003 | 0.486 ± 0.004 |
-| D | 50 | 0.481 ± 0.005 | 0.484 ± 0.005 | 0.434 ± 0.003 | 0.446 ± 0.003 | 0.461 ± 0.004 |
-| E | 64 | 0.564 ± 0.016 | 0.557 ± 0.015 | 0.479 ± 0.005 | 0.475 ± 0.005 | 0.518 ± 0.005 |
-| F | 50 | 0.521 ± 0.005 | 0.501 ± 0.002 | 0.458 ± 0.003 | 0.466 ± 0.004 | 0.481 ± 0.005 |
-| G | 96 | 0.551 ± 0.004 | 0.500 ± 0.004 | 0.514 ± 0.006 | 0.495 ± 0.003 | 0.518 ± 0.001 |
-| H | 126 | 0.525 ± 0.005 | 0.513 ± 0.003 | 0.493 ± 0.003 | 0.496 ± 0.003 | 0.513 ± 0.001 |
-| I | 68 | 0.405 ± 0.007 | 0.384 ± 0.004 | 0.374 ± 0.003 | 0.374 ± 0.004 | 0.405 ± 0.006 |
-| J | 59 | 0.505 ± 0.009 | 0.499 ± 0.010 | 0.473 ± 0.004 | 0.484 ± 0.005 | 0.484 ± 0.005 |
-| K | 53 | 0.510 ± 0.016 | 0.524 ± 0.010 | 0.457 ± 0.005 | 0.462 ± 0.004 | 0.484 ± 0.005 |
+| specimen | n | Vanilla L-BBDM | Ours (L-BBDM) | + specimen label (oracle) | + A stained refs (extra input) | + B unstained ctx | Pixel-space BBDM | Ours + trainable encoder | cWGAN (1 draw) | pix2pix (1 draw) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A | 79 | 0.570 ± 0.029 | 0.538 ± 0.020 | 0.396 ± 0.009 | 0.400 ± 0.007 | 0.505 ± 0.006 | 0.521 ± 0.010 | 0.668 ± 0.002 | 0.874 | 0.690 |
+| B | 55 | 0.575 ± 0.011 | 0.534 ± 0.009 | 0.455 ± 0.003 | 0.471 ± 0.006 | 0.480 ± 0.005 | 0.545 ± 0.002 | 0.658 ± 0.005 | 0.910 | 0.566 |
+| C | 53 | 0.521 ± 0.004 | 0.472 ± 0.004 | 0.459 ± 0.003 | 0.465 ± 0.003 | 0.486 ± 0.004 | 0.589 ± 0.000 | 0.696 ± 0.006 | 0.856 | 0.549 |
+| D | 50 | 0.481 ± 0.005 | 0.484 ± 0.005 | 0.434 ± 0.003 | 0.446 ± 0.003 | 0.461 ± 0.004 | 0.581 ± 0.007 | 0.739 ± 0.006 | 0.843 | 0.520 |
+| E | 64 | 0.564 ± 0.016 | 0.557 ± 0.015 | 0.479 ± 0.005 | 0.475 ± 0.005 | 0.518 ± 0.005 | 0.522 ± 0.005 | 0.627 ± 0.009 | 0.886 | 0.640 |
+| F | 50 | 0.521 ± 0.005 | 0.501 ± 0.002 | 0.458 ± 0.003 | 0.466 ± 0.004 | 0.481 ± 0.005 | 0.606 ± 0.002 | 0.760 ± 0.004 | 0.877 | 0.530 |
+| G | 96 | 0.551 ± 0.004 | 0.500 ± 0.004 | 0.514 ± 0.006 | 0.495 ± 0.003 | 0.518 ± 0.001 | 0.636 ± 0.002 | 0.706 ± 0.006 | 0.913 | 0.579 |
+| H | 126 | 0.525 ± 0.005 | 0.513 ± 0.003 | 0.493 ± 0.003 | 0.496 ± 0.003 | 0.513 ± 0.001 | 0.577 ± 0.003 | 0.627 ± 0.007 | 0.903 | 0.524 |
+| I | 68 | 0.405 ± 0.007 | 0.384 ± 0.004 | 0.374 ± 0.003 | 0.374 ± 0.004 | 0.405 ± 0.006 | 0.573 ± 0.006 | 0.764 ± 0.008 | 0.894 | 0.648 |
+| J | 59 | 0.505 ± 0.009 | 0.499 ± 0.010 | 0.473 ± 0.004 | 0.484 ± 0.005 | 0.484 ± 0.005 | 0.675 ± 0.009 | 0.744 ± 0.006 | 0.948 | 0.575 |
+| K | 53 | 0.510 ± 0.016 | 0.524 ± 0.010 | 0.457 ± 0.005 | 0.462 ± 0.004 | 0.484 ± 0.005 | 0.711 ± 0.006 | 0.754 ± 0.008 | 0.867 | 0.585 |

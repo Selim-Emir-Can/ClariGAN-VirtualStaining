@@ -1,30 +1,30 @@
 
 mean LPIPS (lower = closer), by all; n = tiles
    group    n     stock_vqgan         primary   specimen_cond    refA_stained  refB_unstained     pixel_space trainable_encoder           cwgan         pix2pix
-     all  753           0.523           0.502           0.458           0.460           0.489               -               -               -               -
+     all  753           0.523           0.502           0.458           0.460           0.489           0.591           0.695           0.891           0.583
 
 mean LPIPS (lower = closer), by scale; n = tiles
    group    n     stock_vqgan         primary   specimen_cond    refA_stained  refB_unstained     pixel_space trainable_encoder           cwgan         pix2pix
-   10x10  574           0.530           0.504           0.458           0.461           0.494               -               -               -               -
-     5x5  179           0.501           0.494           0.458           0.457           0.475               -               -               -               -
+   10x10  574           0.530           0.504           0.458           0.461           0.494           0.579           0.673           0.894           0.586
+     5x5  179           0.501           0.494           0.458           0.457           0.475           0.630           0.767           0.882           0.573
 
 mean LPIPS (lower = closer), by tissue; n = tiles
    group    n     stock_vqgan         primary   specimen_cond    refA_stained  refB_unstained     pixel_space trainable_encoder           cwgan         pix2pix
-   brain  483           0.521           0.499           0.457           0.455           0.493               -               -               -               -
-   heart  270           0.526           0.506           0.461           0.470           0.483               -               -               -               -
+   brain  483           0.521           0.499           0.457           0.455           0.493           0.572           0.680           0.890           0.595
+   heart  270           0.526           0.506           0.461           0.470           0.483           0.626           0.722           0.893           0.562
 
 mean LPIPS (lower = closer), by specimen; n = tiles
    group    n     stock_vqgan         primary   specimen_cond    refA_stained  refB_unstained     pixel_space trainable_encoder           cwgan         pix2pix
-       A   79           0.570           0.538           0.396           0.400           0.505               -               -               -               -
-       B   55           0.575           0.534           0.455           0.471           0.480               -               -               -               -
-       C   53           0.521           0.472           0.459           0.465           0.486               -               -               -               -
-       D   50           0.481           0.484           0.434           0.446           0.461               -               -               -               -
-       E   64           0.564           0.557           0.479           0.475           0.518               -               -               -               -
-       F   50           0.521           0.501           0.458           0.466           0.481               -               -               -               -
-       G   96           0.551           0.500           0.514           0.495           0.518               -               -               -               -
-       H  126           0.525           0.513           0.493           0.496           0.513               -               -               -               -
-       I   68           0.405           0.384           0.374           0.374           0.405               -               -               -               -
-       J   59           0.505           0.499           0.473           0.484           0.484               -               -               -               -
-       K   53           0.510           0.524           0.457           0.462           0.484               -               -               -               -
+       A   79           0.570           0.538           0.396           0.400           0.505           0.521           0.668           0.874           0.690
+       B   55           0.575           0.534           0.455           0.471           0.480           0.545           0.658           0.910           0.566
+       C   53           0.521           0.472           0.459           0.465           0.486           0.589           0.696           0.856           0.549
+       D   50           0.481           0.484           0.434           0.446           0.461           0.581           0.739           0.843           0.520
+       E   64           0.564           0.557           0.479           0.475           0.518           0.522           0.627           0.886           0.640
+       F   50           0.521           0.501           0.458           0.466           0.481           0.606           0.760           0.877           0.530
+       G   96           0.551           0.500           0.514           0.495           0.518           0.636           0.706           0.913           0.579
+       H  126           0.525           0.513           0.493           0.496           0.513           0.577           0.627           0.903           0.524
+       I   68           0.405           0.384           0.374           0.374           0.405           0.573           0.764           0.894           0.648
+       J   59           0.505           0.499           0.473           0.484           0.484           0.675           0.744           0.948           0.575
+       K   53           0.510           0.524           0.457           0.462           0.484           0.711           0.754           0.867           0.585
 
-tiles where each model has the lowest mean LPIPS: {'sp_specimen_cond': 252, 'sp_stock_vqgan': 32, 'sp_refB_unstained': 129, 'sp_refA_stained': 223, 'sp_primary': 117}
+tiles where each model has the lowest mean LPIPS: {'sp_specimen_cond': 218, 'sp_stock_vqgan': 27, 'sp_refB_unstained': 120, 'pixel_space': 22, 'pix2pix': 53, 'sp_refA_stained': 201, 'sp_primary': 107, 'trainable_encoder': 5}

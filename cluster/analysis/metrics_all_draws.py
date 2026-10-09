@@ -3,7 +3,8 @@
 Protocol (fixed before looking at the numbers, Oct 7 2026):
   * Every one of the 753 tiles is a held-out prediction (tested once across the 5 folds), and every
     tile has 5 independent draws per method (seeds 1234-1238). All 5 draws are scored.
-    The GANs (cWGAN, pix2pix; v2 only) are deterministic and give one output per tile (gen0): they are
+    The GANs (cWGAN, pix2pix; v2 only) give one output per tile (gen0, a single seeded inference pass; pix2pix
+    keeps dropout on at inference, cWGAN runs in train mode, so neither is strictly deterministic): they are
     scored with the same per-specimen aggregate on that single output and reported without an SD.
   * Metrics per draw vs C&SF at 256 px: LPIPS (AlexNet; from lpips_folds_0_1_2_3_4.json), PSNR, SSIM
     (RGB, data_range 255), and colour error |G/(R+G) of output - G/(R+G) of C&SF| (tile means).
@@ -100,7 +101,7 @@ def main():
     L = [f"# ClariDi spatial split ({'v2' if V2 else 'v1'}): all five draws, predefined aggregate", "",
          "Protocol: see the docstring of analysis/metrics_all_draws.py. Cells are mean ± SD across the 5 draws of the "
          "specimen-macro mean (each draw scored separately; no best-of-n). 256 px, vs C&SF."
-         + (" GANs (cWGAN, pix2pix): one deterministic output per tile, so a single value, no SD." if V2 else ""), ""]
+         + (" GANs (cWGAN, pix2pix): one output per tile (single seeded inference pass), so a single value, no SD." if V2 else ""), ""]
     def table(title, sel, macro=True):
         a = agg(sel, macro)
         L.append(f"## {title} (n = {len(sel)} tiles, {len({tiles[t]['specimen'] for t in sel})} specimens)"); L.append("")
