@@ -54,6 +54,8 @@ Rewritten 2026-10-04 19:10 PDT. Older history is in git (repo/cluster/HANDOFF.md
    v2 macro LPIPS/PSNR/SSIM: Vanilla .521/18.45/.431, Ours .501/18.29/.481, label .454/19.44/.509, A .457/19.16/.500,
    B .485/18.73/.490. NOTE: PSNR Vanilla > Ours on v2 (v1 had Ours > Vanilla). Remaining methods running:
    pixel f0-4 on GPUs 6,4,1,3,7; pix2pix f0/f1 on 8/9 (until 10:00). Then: add them (step 3), summary to HF (step 4).
+   Oct 8 15:42: pixel 5/5 done (exit 0). 17:27 user: +3 GPUs, no deadline -> GPU_LIST="6 7 8" ./run_v2b_queue.sh
+   (second instance, same flock queue). 17:29: GPU 4,3,1 cwgan f0-2; 7,8 cwgan f3-4; 6 encoder f0. GPUs 8/9 pix2pix f0/f1 done 08:28.
    Was: user checks v2; then retrain 5 models x 5 folds on v2 (sp2_* tags, ~50 GPU-h; needs GPUs: Oct 7 all 10 busy,
    austinchi 0-6, brianchc 7-9); rerun metrics; rebuild site; write the summary for the manuscript session (other machine).
    User: '5 folds' remark = only 5 of a planned 10 folds were run; may switch to 5 folds as final.
