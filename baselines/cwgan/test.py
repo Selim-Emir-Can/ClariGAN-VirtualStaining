@@ -53,6 +53,10 @@ if __name__ == '__main__':
     # For [CycleGAN]: It should not affect CycleGAN as CycleGAN uses instancenorm without dropout.
     if opt.eval:
         model.eval()
+    if opt.inference_seed >= 0:   # seeded draws (dropout + per-image batch-norm statistics are the only randomness)
+        import torch
+        torch.manual_seed(opt.inference_seed); torch.cuda.manual_seed_all(opt.inference_seed)
+        torch.backends.cudnn.deterministic = True; torch.backends.cudnn.benchmark = False
     for i, data in enumerate(dataset):
         if i >= opt.num_test:  # only apply our model to opt.num_test images.
             break

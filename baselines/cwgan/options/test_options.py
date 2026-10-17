@@ -16,6 +16,8 @@ class TestOptions(BaseOptions):
         # Dropout and Batchnorm has different behavioir during training and test.
         parser.add_argument('--eval', action='store_true', help='use eval mode during test time.')
         parser.add_argument('--num_test', type=int, default=50, help='how many test images to run')
+        parser.add_argument('--inference_seed', type=int, default=-1,
+                            help='if >= 0: torch seed set once before inference (+ cudnn deterministic); -1 = unseeded, as originally run')
         # rewrite devalue values
         parser.set_defaults(model='test')
         # To avoid cropping, the load_size should be the same as crop_size

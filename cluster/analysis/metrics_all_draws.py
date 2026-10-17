@@ -17,7 +17,7 @@ Protocol (fixed before looking at the numbers, Oct 7 2026):
   * Variants marked (oracle) / (extra input) use information unavailable to plain UA -> C&SF.
 Writes analysis/metrics_all_draws.json (per tile, per draw) and analysis/metrics_all_draws.md
 (--v2: analysis/v2/, deliverables_spatial_v2, split v2; methods without a complete set of outputs are skipped).
-  python analysis/metrics_all_draws.py [--v2]
+  python analysis/metrics_all_draws.py [--v2 [--gan5]]   (--gan5: 5-draw GANs, writes analysis/v2_gan5/)
 """
 import csv, json, os, sys
 from concurrent.futures import ProcessPoolExecutor
@@ -34,7 +34,14 @@ EXPS = [("sp_stock_vqgan", "Vanilla L-BBDM"), ("sp_primary", "Ours (L-BBDM)"),
         ("sp_refB_unstained", "+ B unstained ctx")]
 if V2: EXPS += [("pixel_space", "Pixel-space BBDM"), ("trainable_encoder", "Ours + trainable encoder"),
                 ("cwgan", "cWGAN (1 draw)"), ("pix2pix", "pix2pix (1 draw)")]
-NDRAW = {e: 1 if e in ("cwgan", "pix2pix") else 5 for e, _ in EXPS}
+GAN5 = V2 and "--gan5" in sys.argv   # GANs with 5 inference draws (rerun_gan_seeds.py -> deliverables_spatial_v2_gan5)
+GANS = ("cwgan", "pix2pix")
+if GAN5:
+    A = f"{R}/analysis/v2_gan5"
+    EXPS = [(e, {"cwgan": "cWGAN", "pix2pix": "pix2pix"}.get(e, n)) for e, n in EXPS]
+NDRAW = {e: 1 if e in GANS and not GAN5 else 5 for e, _ in EXPS}
+DIR = lambda e: f"{R}/deliverables_spatial_v2_gan5" if GAN5 and e in GANS else D
+WORSE_HIGH = {"lpips": True, "psnr": False, "ssim": False, "green_err": True}
 METRICS = [("lpips", "LPIPS ↓", 3), ("psnr", "PSNR ↑", 2), ("ssim", "SSIM ↑", 3), ("green_err", r"\|Δ green share\| ↓", 3)]
 
 
@@ -52,7 +59,7 @@ def score_tile(job):
     for e, _ in EXPS:
         rs = []
         for j in range(NDRAW[e]):
-            x = load(f"{D}/{e}/samples/fold_{fold}/{tid}_gen{j}.png")
+            x = load(f"{DIR(e)}/{e}/samples/fold_{fold}/{tid}_gen{j}.png")
             rs.append(dict(psnr=peak_signal_noise_ratio(gt, x, data_range=255),
                            ssim=structural_similarity(gt, x, channel_axis=2, data_range=255),
                            green_err=abs(green(x) - g0)))
@@ -101,7 +108,8 @@ def main():
     L = [f"# ClariDi spatial split ({'v2' if V2 else 'v1'}): all five draws, predefined aggregate", "",
          "Protocol: see the docstring of analysis/metrics_all_draws.py. Cells are mean ± SD across the 5 draws of the "
          "specimen-macro mean (each draw scored separately; no best-of-n). 256 px, vs C&SF."
-         + (" GANs (cWGAN, pix2pix): one output per tile (single seeded inference pass), so a single value, no SD." if V2 else ""), ""]
+         + (" GANs (cWGAN, pix2pix): one output per tile (single seeded inference pass), so a single value, no SD." if V2 and not GAN5 else "")
+         + (" GANs: 5 inference draws (seeds 1234-1238) on the trained weights, scored like the diffusion draws." if GAN5 else ""), ""]
     def table(title, sel, macro=True):
         a = agg(sel, macro)
         L.append(f"## {title} (n = {len(sel)} tiles, {len({tiles[t]['specimen'] for t in sel})} specimens)"); L.append("")
@@ -120,6 +128,40 @@ def main():
     for s in sorted({v["specimen"] for v in tiles.values()}):
         sel = [t for t in allt if tiles[t]["specimen"] == s]; a = agg(sel, macro=False)
         L.append(f"| {s} | {len(sel)} | " + " | ".join(cell(a[e, "lpips"], 3) for e, _ in EXPS) + " |")
+    # --- across-draw spread (secondary; added Oct 2026 at the co-author's request, headline protocol unchanged)
+    def q(v):
+        return np.percentile(v, 25), np.median(v), np.percentile(v, 75)
+    def spread(title, sel):
+        a = agg(sel)
+        L.append(f"## {title} (n = {len(sel)} tiles)"); L.append("")
+        L.append("Distribution of the 5 per-draw specimen-macro scores: median [IQR = Q3 − Q1] / worst draw "
+                 "(highest LPIPS and colour error, lowest PSNR and SSIM). Percentiles: numpy linear interpolation over 5 values."); L.append("")
+        L.append("| method | " + " | ".join(h for _, h, _ in METRICS) + " |"); L.append("|---|" + "---|" * len(METRICS))
+        for e, name in EXPS:
+            cs = []
+            for m, _, d in METRICS:
+                v = a[e, m]
+                if len(v) < 2: cs.append(f"{v[0]:.{d}f} (1 draw)"); continue
+                q1, md, q3 = q(v); w = max(v) if WORSE_HIGH[m] else min(v)
+                cs.append(f"{md:.{d}f} [{q3 - q1:.{d}f}] / {w:.{d}f}")
+            L.append(f"| {name} | " + " | ".join(cs) + " |")
+        L.append("")
+    spread("Across-draw spread, all tiles, specimen-macro", allt)
+    spread("Across-draw spread, without D part 0, specimen-macro", noD0)
+    # per-tile worst case: for each tile the worst of its draws, then the same specimen-macro mean
+    L.append(f"## Per-tile worst draw, all tiles, specimen-macro (n = {len(allt)} tiles)"); L.append("")
+    L.append("For each tile, the worst of its draws on that metric (secondary robustness view; for 1-draw methods "
+             "this equals the single output), then the specimen-macro mean. Compare with the mean column of the primary table."); L.append("")
+    L.append("| method | " + " | ".join(h for _, h, _ in METRICS) + " |"); L.append("|---|" + "---|" * len(METRICS))
+    specs = sorted({tiles[t]["specimen"] for t in allt})
+    for e, name in EXPS:
+        cs = []
+        for m, _, d in METRICS:
+            f = max if WORSE_HIGH[m] else min
+            wt = {t: f(tiles[t]["draws"][e][j][m] for j in range(NDRAW[e])) for t in allt}
+            cs.append(f"{np.mean([np.mean([wt[t] for t in allt if tiles[t]['specimen'] == s]) for s in specs]):.{d}f}")
+        L.append(f"| {name} | " + " | ".join(cs) + " |")
+    L.append("")
     open(f"{A}/metrics_all_draws.md", "w").write("\n".join(L) + "\n")
     print("\n".join(L))
 
