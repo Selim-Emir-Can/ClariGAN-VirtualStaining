@@ -169,3 +169,13 @@ visual_review_loso/ (user's LOSO grades), archive_loso/ (logs, scripts, training
 HF SelimEmirCan/claridi-checkpoints (public, gated): 165 checkpoints. GitHub branch specimen-grouped-cv.
 Finding: 55% of graded generations in the worst bucket; failures per specimen, not sampling.
 weights/ (fine-tuned + stock VQGAN) stays local, not uploaded.
+
+## Oct 17 2026 update
+- GANs: 5 inference draws on split v2 (rerun_gan_seeds.py, GPU 0); tables incl. across-draw median/IQR/worst +
+  per-tile worst draw in analysis/v2_gan5/ (metrics_all_draws.py --v2 --gan5). Uploaded to HF claridi-results
+  spatial_v2/{pix2pix_5draw,cwgan_5draw,analysis_gan5} (commit 9a4e567). LOSO GANs on HF are also single-draw.
+- User: DELETED deliverables_spatial_v2/ and deliverables_spatial_v2_gan5/ (all outputs are on HF claridi-results
+  spatial_v2/ as parquet; sizes verified before deletion). To rescore or rebuild the site, re-materialize PNGs from
+  the parquet first (metrics_all_draws.py / build_site.py read PNGs).
+- v2 checkpoints (80 files, 94.5 GB) uploading to claridi-checkpoints spatial_v2/<exp>/fold_k/ (upload_checkpoints.py --v2;
+  log logs_upload_ckpt_v2.log; ends with --verify).
