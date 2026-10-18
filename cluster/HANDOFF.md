@@ -179,3 +179,4 @@ weights/ (fine-tuned + stock VQGAN) stays local, not uploaded.
   the parquet first (metrics_all_draws.py / build_site.py read PNGs).
 - v2 checkpoints (80 files, 94.5 GB) uploading to claridi-checkpoints spatial_v2/<exp>/fold_k/ (upload_checkpoints.py --v2;
   log logs_upload_ckpt_v2.log; ends with --verify).
+- Oct 17: v2 checkpoints verified on HF claridi-checkpoints spatial_v2/ (80/80); user: DELETED results_spatial_v2/.
